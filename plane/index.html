@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Пипка-Пилот</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: приборная панель — узкая шапка со счётом, поле на всю высоту, полоса настройки снизу */
+:root{
+  --ink:#090b0f; --panel:#12161c; --carbon:#191e25; --line:#262f3a;
+  --fg:#d9e0e8; --dim:#78848f; --red:#e4322b; --amber:#f0b429; --green:#58d68d;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0; background:var(--ink); color:var(--fg); font-family:var(--sans);
+  display:flex; flex-direction:column; overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:10px 12px; gap:8px;
+}
+.hud{display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-family:var(--mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim)}
+.hud b{display:block; font-size:17px; font-weight:600; letter-spacing:.02em; color:var(--fg); font-variant-numeric:tabular-nums}
+.hud .brand{color:var(--red); font-weight:600; letter-spacing:.18em}
+.hud .spacer{flex:1 1 auto; min-width:0}
+.lives{display:flex; gap:5px; align-items:center}
+.lives i{width:9px; height:9px; border-radius:50%; background:var(--red); box-shadow:0 0 7px rgba(228,50,43,.7)}
+.lives i.off{background:var(--line); box-shadow:none}
+#field{position:relative; flex:1 1 auto; min-height:0; border:1px solid var(--line); border-radius:3px; background:#070910; overflow:hidden}
+#cv{display:block}
+/* Индикатор пипки */
+.stick{position:absolute; left:10px; bottom:10px; width:74px; padding:6px 6px 4px; background:rgba(10,13,18,.78); border:1px solid var(--line); border-radius:3px; font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--dim); text-align:center}
+.stick .box{position:relative; width:60px; height:60px; margin:3px auto 4px; border:1px solid var(--line); background:
+  linear-gradient(to right,transparent 49%,var(--line) 49%,var(--line) 51%,transparent 51%),
+  linear-gradient(to bottom,transparent 49%,var(--line) 49%,var(--line) 51%,transparent 51%)}
+.stick .dot{position:absolute; left:50%; top:50%; width:11px; height:11px; margin:-5.5px 0 0 -5.5px; border-radius:50%; background:var(--red); box-shadow:0 0 9px rgba(228,50,43,.85)}
+.stick .rate{color:var(--amber)}
+/* Оверлеи */
+.ov{position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; text-align:center; background:rgba(7,9,14,.9); padding:20px}
+.ov h1{margin:0; font-family:var(--mono); font-size:clamp(22px,5.5vw,34px); font-weight:600; letter-spacing:.2em; text-transform:uppercase; text-wrap:balance}
+.ov h1 span{color:var(--red)}
+.ov h2{margin:0; font-family:var(--mono); font-size:clamp(18px,4.5vw,26px); font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--red)}
+.ov p{margin:0; max-width:46ch; font-size:13.5px; line-height:1.65; color:#aab4be}
+.ov ul{margin:0; padding:0; list-style:none; display:grid; gap:7px; font-family:var(--mono); font-size:12px; color:#aab4be; text-align:left}
+.ov ul b{color:var(--amber); font-weight:500}
+.btn{font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#fff; background:var(--red); border:0; border-radius:3px; padding:11px 22px; cursor:pointer}
+.btn:hover{background:#f2473f}
+.btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+.ghost{background:transparent; color:var(--dim); border:1px solid var(--line)}
+.ghost:hover{background:var(--carbon); color:var(--fg)}
+.final{display:flex; gap:22px; font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+.final b{display:block; font-size:21px; color:var(--fg); font-variant-numeric:tabular-nums}
+.bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+.bar input[type=range]{flex:1 1 150px; min-width:110px; accent-color:var(--red); height:18px}
+.bar .val{color:var(--amber); font-variant-numeric:tabular-nums; min-width:62px}
+.bar .tip{flex:1 1 100%; text-transform:none; letter-spacing:0; font-family:var(--sans); font-size:11.5px; color:#5f6a75}
+@media (prefers-reduced-motion:reduce){.lives i{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="hud">
+  <div class="brand" data-i18n="brand">Пипка-Пилот</div>
+  <div><span data-i18n="score">Счёт</span><b id="hScore">0</b></div>
+  <div><span data-i18n="dist">Дистанция</span><b id="hDist">0.00 км</b></div>
+  <div><span data-i18n="gates">Ворота</span><b id="hGates">0</b></div>
+  <div><span data-i18n="combo">Комбо</span><b id="hCombo">×1</b></div>
+  <div class="spacer"></div>
+  <div><span data-i18n="rec">Рекорд</span><b id="hBest">0</b></div>
+  <div class="lives" id="hLives" data-i18n-title="livesT" title="Запас самолётиков"><i></i><i></i><i></i></div>
+</div>
+
+<div id="field">
+  <canvas id="cv"></canvas>
+  <div class="stick" aria-hidden="true">
+    <span data-i18n="nub">Пипка</span>
+    <div class="box"><div class="dot" id="dot"></div></div>
+    <div class="rate"><span id="rate">0</span> px/s</div>
+  </div>
+
+  <div class="ov" id="ovStart">
+    <h1 data-i18n-html="titleH">Пипка<span>-</span>Пилот</h1>
+    <p data-i18n-html="intro"></p>
+    <ul>
+      <li data-i18n-html="k1"></li>
+      <li data-i18n-html="k2"></li>
+      <li data-i18n-html="k3"></li>
+    </ul>
+    <button class="btn" id="btnStart" data-i18n="startBtn">Взлёт</button>
+    <p style="font-size:11.5px;color:#5f6a75" data-i18n="note"></p>
+  </div>
+
+  <div class="ov" id="ovPause" hidden>
+    <h2 data-i18n="pauseH">Пауза</h2>
+    <p data-i18n="pauseP"></p>
+    <button class="btn" id="btnResume" data-i18n="resume">Продолжить</button>
+  </div>
+
+  <div class="ov" id="ovOver" hidden>
+    <h2 data-i18n="crashH">Земля</h2>
+    <div class="final">
+      <div><span data-i18n="score">Счёт</span><b id="fScore">0</b></div>
+      <div><span data-i18n="dist">Дистанция</span><b id="fDist">0.00</b></div>
+      <div><span data-i18n="gates">Ворота</span><b id="fGates">0</b></div>
+    </div>
+    <p id="fNote"></p>
+    <button class="btn" id="btnAgain" data-i18n="again">Ещё раз</button>
+  </div>
+</div>
+
+<div class="bar">
+  <label for="sens" data-i18n="sensL">Чувствительность пипки</label>
+  <input type="range" id="sens" min="120" max="1200" step="20" value="420">
+  <span class="val" id="sensVal">420 px/s</span>
+  <button class="btn ghost" id="btnMute" type="button">Звук: вкл</button>
+  <button class="btn ghost" id="btnLang" type="button">EN</button>
+  <a class="btn ghost" href="../index.html" data-i18n="allGames" style="text-decoration:none;display:inline-block">Все игры</a>
+  <span class="tip" id="tip" data-i18n="tip"></span>
+</div>
+
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d',{alpha:false});
+var field=document.getElementById('field');
+var el=function(id){return document.getElementById(id)};
+var ovStart=el('ovStart'), ovPause=el('ovPause'), ovOver=el('ovOver');
+var dot=el('dot'), rateOut=el('rate');
+var W=600,H=400,DPR=1;
+
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
+var num=function(s,d){ var n=parseFloat(s); return isFinite(n)?n:d; };
+
+var sens=num(store('pipka.sens'),420);
+var muted=store('pipka.mute')==='1';
+var best=num(store('pipka.best'),0);
+
+
+/* ======================= ЯЗЫК ======================= */
+var TXT={
+ru:{brand:'Пипка-Пилот', titleH:'Пипка<span>-</span>Пилот',
+ score:'Счёт', dist:'Дистанция', gates:'Ворота', combo:'Комбо', rec:'Рекорд',
+ livesT:'Запас самолётиков', nub:'Пипка', km:'км',
+ intro:'Красная пипка — это <b>TrackPoint</b>. Она отдаёт не координату, а <em>нажим</em>, поэтому здесь она работает как настоящая ручка управления: сильнее давишь — резче крен.',
+ k1:'<b>влево / вправо</b> — крен, самолёт сносит в сторону наклона',
+ k2:'<b>вперёд / назад</b> — газ: пикируешь быстрее, задираешь — медленнее',
+ k3:'<b>Esc</b> — пауза, <b>стрелки</b> — запасное управление',
+ startBtn:'Взлёт',
+ note:'Курсор захватывается полем, чтобы мышь не уезжала. Чувствительность — ползунком снизу.',
+ pauseH:'Пауза', pauseP:'Курсор отпущен. Жми, чтобы снова взять ручку.', resume:'Продолжить',
+ crashH:'Земля', again:'Ещё раз',
+ n1:'Попробуй подправить чувствительность снизу — половина дела в ней.',
+ n2:'Крепкий полёт. Пипка слушается.',
+ n3:'Это уже уровень «сдал на права в IBM».',
+ sensL:'Чувствительность пипки', allGames:'Все игры',
+ tip:'Если самолёт дёргается от лёгкого касания — тащи ползунок вправо. Если пипку приходится продавливать до упора — влево.',
+ snd:'Звук', on:'вкл', off:'выкл'},
+en:{brand:'Pipka Pilot', titleH:'Pipka<span>-</span>Pilot',
+ score:'Score', dist:'Distance', gates:'Gates', combo:'Combo', rec:'Best',
+ livesT:'Planes in reserve', nub:'Pipka', km:'km',
+ intro:'That red nub is a <b>TrackPoint</b> — in Russian everybody calls it the <b>pipka</b>, and this whole thing is built on it. It reports <em>pressure</em> rather than position, so here it works as a real control stick: push harder, bank harder.',
+ k1:'<b>left / right</b> — bank; the plane drifts the way you lean it',
+ k2:'<b>forward / back</b> — throttle: dive to go faster, pull up to slow down',
+ k3:'<b>Esc</b> — pause, <b>arrows</b> — fallback controls',
+ startBtn:'Take off',
+ note:'The field captures the pointer so the mouse cannot wander off. Sensitivity is the slider below.',
+ pauseH:'Paused', pauseP:'The pointer is released. Click to take the stick again.', resume:'Resume',
+ crashH:'Ground', again:'Again',
+ n1:'Try the sensitivity slider below — half the game is in it.',
+ n2:'Solid flight. The nub is listening.',
+ n3:'That is officially an IBM pilot licence.',
+ sensL:'Pipka sensitivity', allGames:'All games',
+ tip:'If the plane twitches at the lightest touch, drag the slider right. If you have to shove the pipka to its limit, drag it left.',
+ snd:'Sound', on:'on', off:'off'}};
+var LANG=store('pipka.lang')||(((navigator.language||'ru').slice(0,2)==='ru')?'ru':'en');
+function t(k){ var d=TXT[LANG]||TXT.ru; return d[k]!==undefined?d[k]:(TXT.ru[k]!==undefined?TXT.ru[k]:k); }
+function applyLang(){
+  document.documentElement.lang=LANG;
+  var i, els=document.querySelectorAll('[data-i18n]');
+  for(i=0;i<els.length;i++) els[i].textContent=t(els[i].getAttribute('data-i18n'));
+  els=document.querySelectorAll('[data-i18n-html]');
+  for(i=0;i<els.length;i++) els[i].innerHTML=t(els[i].getAttribute('data-i18n-html'));
+  els=document.querySelectorAll('[data-i18n-title]');
+  for(i=0;i<els.length;i++) els[i].title=t(els[i].getAttribute('data-i18n-title'));
+  var lb=document.getElementById('btnLang'); if(lb) lb.textContent=(LANG==='ru'?'EN':'RU');
+  drawMute(); hudT=1; hud(0);
+}
+
+/* ---------- звук ---------- */
+var AC=null;
+function blip(freq,dur,type,vol){
+  if(muted) return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    var o=AC.createOscillator(), g=AC.createGain(), t=AC.currentTime;
+    o.type=type||'square'; o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.linearRampToValueAtTime(vol||0.05,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.12));
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+(dur||0.12)+0.03);
+  }catch(e){}
+}
+
+/* ---------- размеры ---------- */
+function resize(){
+  var r=field.getBoundingClientRect();
+  W=Math.max(260,Math.round(r.width)); H=Math.max(220,Math.round(r.height));
+  DPR=Math.min(1.5, window.devicePixelRatio||1);
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  makeStars();
+}
+window.addEventListener('resize',resize);
+
+/* ---------- ввод ---------- */
+var stick={x:0,y:0,rate:0};
+var accX=0, accY=0, keys={};
+document.addEventListener('mousemove',function(e){
+  if(S.phase!=='fly') return;
+  accX+=e.movementX||0; accY+=e.movementY||0;
+},{passive:true});
+
+window.addEventListener('keydown',function(e){
+  var k=e.key;
+  if(k==='ArrowLeft'){keys.l=1;e.preventDefault()}
+  else if(k==='ArrowRight'){keys.r=1;e.preventDefault()}
+  else if(k==='ArrowUp'){keys.u=1;e.preventDefault()}
+  else if(k==='ArrowDown'){keys.d=1;e.preventDefault()}
+  else if(k==='Escape'&&S.phase==='fly'){ pause(); }
+  else if((k===' '||k==='Enter')&&S.phase!=='fly'){ e.preventDefault(); if(S.phase==='over')start(); else if(S.phase==='pause')resume(); else start(); }
+});
+window.addEventListener('keyup',function(e){
+  var k=e.key;
+  if(k==='ArrowLeft')keys.l=0; else if(k==='ArrowRight')keys.r=0;
+  else if(k==='ArrowUp')keys.u=0; else if(k==='ArrowDown')keys.d=0;
+});
+
+function readStick(dt){
+  var rx=accX/dt, ry=accY/dt; accX=0; accY=0;
+  stick.rate=Math.round(Math.sqrt(rx*rx+ry*ry));
+  var tx=Math.max(-1,Math.min(1,rx/sens)), ty=Math.max(-1,Math.min(1,ry/sens));
+  if(keys.l||keys.r) tx=(keys.r?1:0)-(keys.l?1:0);
+  if(keys.u||keys.d) ty=(keys.d?1:0)-(keys.u?1:0);
+  var a=1-Math.exp(-dt/0.07);
+  stick.x+=(tx-stick.x)*a; stick.y+=(ty-stick.y)*a;
+}
+
+/* ---------- состояние ---------- */
+var S={phase:'start',score:0,dist:0,gates:0,combo:1,lives:3,shake:0,flash:0};
+var P={x:0,vx:0,bank:0,inv:0};
+var gates=[], parts=[], stars=[], lastGate=0;
+
+function makeStars(){
+  stars=[]; var n=Math.round(W*H/14000);
+  for(var i=0;i<n;i++) stars.push({x:Math.random()*W, y:Math.random()*H, z:0.25+Math.random()*0.9, r:Math.random()<0.15?1.6:1});
+}
+
+function reset(){
+  S.score=0; S.dist=0; S.gates=0; S.combo=1; S.lives=3; S.shake=0; S.flash=0;
+  P.x=W/2; P.vx=0; P.bank=0; P.inv=1.2;
+  gates=[]; parts=[]; lastGate=0; accX=0; accY=0; stick.x=0; stick.y=0;
+  makeStars();
+}
+
+var GAP_MIN=130, SPACING=540;
+function spawnGates(){
+  var horizon=S.dist+H+260;
+  while(lastGate<horizon){
+    lastGate+=SPACING - Math.min(160, S.gates*4);
+    var lvl=level();
+    var gap=Math.max(GAP_MIN, Math.min(W*0.62, 330-lvl*11));
+    var margin=26;
+    var gx=margin+Math.random()*(W-gap-margin*2);
+    gates.push({y:lastGate, gx:gx, gw:gap, hit:false});
+  }
+  while(gates.length && gates[0].y < S.dist-120) gates.shift();
+}
+function level(){ return 1+Math.floor(S.gates/4); }
+
+function boom(x,y,n,col){
+  for(var i=0;i<n;i++){
+    var a=Math.random()*Math.PI*2, s=40+Math.random()*260;
+    parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-40,t:0.35+Math.random()*0.5,c:col||'#f0b429'});
+  }
+}
+
+function crash(x,y){
+  if(P.inv>0) return;
+  S.lives--; S.combo=1; P.inv=1.6; S.shake=14; S.flash=0.35;
+  boom(x,y,22,'#e4322b'); blip(90,0.3,'sawtooth',0.07);
+  P.vx*=-0.3;
+  if(S.lives<=0) gameOver();
+}
+
+function gameOver(){
+  S.phase='over';
+  if(S.score>best){ best=Math.round(S.score); store('pipka.best',best); }
+  el('fScore').textContent=Math.round(S.score);
+  el('fDist').textContent=(S.dist/1000).toFixed(2)+' '+t('km');
+  el('fGates').textContent=S.gates;
+  el('fNote').textContent = t(S.gates>=24?'n3':(S.gates>=12?'n2':'n1'));
+  ovOver.hidden=false;
+  if(document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
+  paint();
+}
+
+/* ---------- физика ---------- */
+var BANK_MAX=0.95, LAT=1500, DRAG=2.3, BASE=360;
+function step(dt){
+  readStick(dt);
+  var lvl=level();
+  var throttle=1 - stick.y*0.42;
+  var speed=(BASE+lvl*16)*Math.max(0.55,Math.min(1.5,throttle));
+  S.dist+=speed*dt;
+  S.score+=speed*dt*0.02*S.combo;
+
+  var target=stick.x*BANK_MAX;
+  P.bank+=(target-P.bank)*Math.min(1,dt*9);
+  P.vx+=Math.sin(P.bank)*LAT*dt;
+  P.vx-=P.vx*Math.min(1,DRAG*dt);
+  P.x+=P.vx*dt;
+
+  var wall=16;
+  if(P.x<wall){ P.x=wall; if(P.vx<-60) crash(P.x,planeY()); P.vx=Math.abs(P.vx)*0.25; }
+  if(P.x>W-wall){ P.x=W-wall; if(P.vx>60) crash(P.x,planeY()); P.vx=-Math.abs(P.vx)*0.25; }
+
+  spawnGates();
+  var prev=S.dist-speed*dt;
+  for(var i=0;i<gates.length;i++){
+    var g=gates[i];
+    if(!g.hit && g.y>prev && g.y<=S.dist){
+      g.hit=true;
+      if(P.x>g.gx+8 && P.x<g.gx+g.gw-8){
+        S.gates++;
+        var off=Math.abs((P.x-(g.gx+g.gw/2))/(g.gw/2));
+        if(off<0.25){ S.combo=Math.min(9,S.combo+1); S.score+=60*S.combo; blip(1180,0.09,'square',0.045); boom(P.x,planeY(),6,'#58d68d'); }
+        else { S.score+=30*S.combo; blip(760,0.07,'square',0.035); }
+      } else {
+        crash(P.x,planeY());
+      }
+    }
+  }
+
+  if(P.inv>0) P.inv-=dt;
+  if(S.shake>0) S.shake=Math.max(0,S.shake-dt*34);
+  if(S.flash>0) S.flash=Math.max(0,S.flash-dt);
+
+  for(var j=parts.length-1;j>=0;j--){
+    var p=parts[j]; p.t-=dt;
+    if(p.t<=0){ parts.splice(j,1); continue; }
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=240*dt; p.vx*=0.97;
+  }
+  if(parts.length>160) parts.splice(0,parts.length-160);
+}
+
+function planeY(){ return H*0.74; }
+
+/* ---------- отрисовка ---------- */
+function paint(){
+  var sh=S.shake>0.3?(Math.random()-0.5)*S.shake:0;
+  ctx.save();
+  ctx.translate(sh,sh*0.6);
+
+  ctx.fillStyle='#070910'; ctx.fillRect(-20,-20,W+40,H+40);
+
+  // звёзды
+  for(var i=0;i<stars.length;i++){
+    var s=stars[i];
+    var y=(s.y + S.dist*s.z*0.25)%H;
+    ctx.fillStyle = s.r>1 ? 'rgba(170,200,230,.55)' : 'rgba(120,145,170,.33)';
+    ctx.fillRect(s.x, y, s.r, s.r);
+  }
+
+  // линии горизонта (ощущение скорости)
+  ctx.strokeStyle='rgba(38,47,58,.9)'; ctx.lineWidth=1;
+  var step0=130, off=S.dist%step0;
+  ctx.beginPath();
+  for(var y2=-off; y2<H; y2+=step0){ ctx.moveTo(0,Math.round(y2)+0.5); ctx.lineTo(W,Math.round(y2)+0.5); }
+  ctx.stroke();
+
+  // стены каньона
+  ctx.fillStyle='#0d1118'; ctx.fillRect(0,0,14,H); ctx.fillRect(W-14,0,14,H);
+  ctx.strokeStyle='#1e2630'; ctx.beginPath();
+  ctx.moveTo(14.5,0); ctx.lineTo(14.5,H); ctx.moveTo(W-14.5,0); ctx.lineTo(W-14.5,H); ctx.stroke();
+
+  // ворота
+  var py=planeY();
+  for(var k=0;k<gates.length;k++){
+    var g=gates[k], gy=py-(g.y-S.dist);
+    if(gy<-70||gy>H+70) continue;
+    var h=22;
+    ctx.fillStyle='#19202a';
+    ctx.fillRect(14,gy-h/2,g.gx-14,h);
+    ctx.fillRect(g.gx+g.gw,gy-h/2,W-14-(g.gx+g.gw),h);
+    ctx.fillStyle='rgba(228,50,43,.85)';
+    ctx.fillRect(14,gy-h/2,g.gx-14,2); ctx.fillRect(14,gy+h/2-2,g.gx-14,2);
+    ctx.fillRect(g.gx+g.gw,gy-h/2,W-14-(g.gx+g.gw),2); ctx.fillRect(g.gx+g.gw,gy+h/2-2,W-14-(g.gx+g.gw),2);
+    // створ
+    ctx.fillStyle='#f0b429';
+    ctx.fillRect(g.gx-3,gy-h/2-3,3,h+6); ctx.fillRect(g.gx+g.gw,gy-h/2-3,3,h+6);
+    ctx.fillStyle='rgba(88,214,141,.5)';
+    ctx.fillRect(g.gx+g.gw/2-1,gy-h/2-7,2,4);
+  }
+
+  // частицы
+  for(var q=0;q<parts.length;q++){
+    var p=parts[q];
+    ctx.globalAlpha=Math.max(0,Math.min(1,p.t*1.6));
+    ctx.fillStyle=p.c; ctx.fillRect(p.x-1.5,p.y-1.5,3,3);
+  }
+  ctx.globalAlpha=1;
+
+  // самолёт
+  var blink = P.inv>0 && Math.floor(P.inv*12)%2===0;
+  if(!blink){
+    ctx.save();
+    ctx.translate(P.x,py);
+    ctx.rotate(P.bank*0.22);
+    var sx=Math.cos(P.bank);
+    // инверсионный след
+    ctx.fillStyle='rgba(127,180,230,.16)';
+    ctx.fillRect(-2,8,4,44);
+    ctx.scale(sx||0.05,1);
+    ctx.beginPath();
+    ctx.moveTo(0,-15); ctx.lineTo(10,8); ctx.lineTo(3,5); ctx.lineTo(3,13);
+    ctx.lineTo(-3,13); ctx.lineTo(-3,5); ctx.lineTo(-10,8);
+    ctx.closePath();
+    ctx.fillStyle='#e6ecf3'; ctx.fill();
+    ctx.fillStyle='#e4322b'; ctx.fillRect(-2.2,-9,4.4,9);
+    ctx.restore();
+  }
+
+  if(S.flash>0){ ctx.fillStyle='rgba(228,50,43,'+(S.flash*0.5).toFixed(3)+')'; ctx.fillRect(0,0,W,H); }
+  ctx.restore();
+}
+
+/* ---------- HUD ---------- */
+var hudT=0;
+function hud(dt){
+  hudT+=dt; if(hudT<0.09) return; hudT=0;
+  el('hScore').textContent=Math.round(S.score);
+  el('hDist').textContent=(S.dist/1000).toFixed(2)+' '+t('km');
+  el('hGates').textContent=S.gates;
+  el('hCombo').textContent='×'+S.combo;
+  el('hBest').textContent=Math.round(best);
+  var li=el('hLives').children;
+  for(var i=0;i<li.length;i++) li[i].className = i<S.lives ? '' : 'off';
+  dot.style.transform='translate('+(stick.x*24).toFixed(1)+'px,'+(stick.y*24).toFixed(1)+'px)';
+  rateOut.textContent=stick.rate;
+}
+
+/* ---------- цикл ---------- */
+var last=0, raf=0;
+function frame(ts){
+  raf=requestAnimationFrame(frame);
+  if(!last) last=ts;
+  var dt=Math.min(0.05,(ts-last)/1000); last=ts;
+  if(dt<=0) return;
+  if(S.phase==='fly'){ step(dt); paint(); }
+  hud(dt);
+}
+
+/* ---------- управление фазами ---------- */
+function start(){
+  reset(); S.phase='fly';
+  ovStart.hidden=true; ovOver.hidden=true; ovPause.hidden=true;
+  if(cv.requestPointerLock) try{ cv.requestPointerLock(); }catch(e){}
+  blip(520,0.1,'triangle',0.04);
+}
+function pause(){
+  if(S.phase!=='fly') return;
+  S.phase='pause'; ovPause.hidden=false;
+  if(document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
+}
+function resume(){
+  if(S.phase!=='pause') return;
+  S.phase='fly'; ovPause.hidden=true; accX=0; accY=0;
+  if(cv.requestPointerLock) try{ cv.requestPointerLock(); }catch(e){}
+}
+document.addEventListener('pointerlockchange',function(){
+  if(!document.pointerLockElement && S.phase==='fly') pause();
+});
+el('btnStart').addEventListener('click',start);
+el('btnAgain').addEventListener('click',start);
+el('btnResume').addEventListener('click',resume);
+field.addEventListener('click',function(e){
+  if(e.target.tagName==='BUTTON') return;
+  if(S.phase==='pause') resume();
+});
+
+var sl=el('sens'), sv=el('sensVal');
+sl.value=sens; sv.textContent=sens+' px/s';
+sl.addEventListener('input',function(){
+  sens=num(sl.value,420); sv.textContent=sens+' px/s'; store('pipka.sens',sens);
+});
+var mb=el('btnMute');
+function drawMute(){ mb.textContent=t('snd')+': '+(muted?t('off'):t('on')); }
+mb.addEventListener('click',function(){ muted=!muted; store('pipka.mute',muted?'1':'0'); drawMute(); });
+drawMute();
+el('btnLang').addEventListener('click',function(){
+  LANG=(LANG==='ru'?'en':'ru'); store('pipka.lang',LANG); applyLang();
+});
+
+/* ---------- горячее обновление страницы ---------- */
+function boot(saved){
+  applyLang(); resize(); reset(); paint(); hud(1);
+  if(saved && saved.best>best){ best=saved.best; }
+  if(saved && saved.sens){ sens=saved.sens; sl.value=sens; sv.textContent=sens+' px/s'; }
+  raf=requestAnimationFrame(frame);
+}
+try{
+  if(window.claude && window.claude.hot){
+    window.claude.hot.snapshot(function(){ return {best:best, sens:sens}; });
+    if(window.claude.hot.ready) window.claude.hot.ready(boot); else boot(window.claude.hot.data||{});
+  } else boot({});
+}catch(e){ boot({}); }
+})();
+</script>
+</body>
+</html>

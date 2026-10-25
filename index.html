@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Пипкаигры</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: одна колонка, проза в 68ch, карточки игр в две колонки со схлопыванием */
+:root{
+  --ink:#090b0f; --panel:#12161c; --carbon:#191e25; --line:#262f3a; --line2:#323c48;
+  --fg:#d9e0e8; --dim:#8b96a1; --mute:#5f6a75;
+  --red:#e4322b; --amber:#f0b429; --cyan:#6fd0e8; --green:#58d68d;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ink); color:var(--fg); font-family:var(--sans);
+  font-size:15px; line-height:1.68;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:860px; margin:0 auto; padding-block:0 64px}
+a{color:var(--cyan)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+
+header{display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap;
+  padding-block:30px 22px; border-bottom:1px solid var(--line)}
+.brand{font-family:var(--mono); font-size:clamp(23px,5.2vw,34px); font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase; line-height:1.1; margin:0}
+.brand span{color:var(--red)}
+header .sub{font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--mute); flex:1 1 180px}
+.lang-btn{font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.16em;
+  color:var(--dim); background:transparent; border:1px solid var(--line2);
+  border-radius:3px; padding:8px 14px; cursor:pointer}
+.lang-btn:hover{background:var(--carbon); color:var(--fg)}
+
+.epigraph{font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:var(--red);
+  margin:0; padding-block:20px 0; max-width:68ch}
+.epigraph small{display:block; font-family:var(--sans); font-size:11.5px; letter-spacing:0;
+  color:var(--mute); margin-top:5px}
+.lede{font-size:16.5px; color:#b6c0ca; max-width:68ch; padding-block:26px 8px}
+.lede b{color:var(--fg); font-weight:600}
+h2{font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--mute); margin:46px 0 0}
+.game{border-top:1px solid var(--line); margin-top:14px; padding-top:26px}
+.card{display:grid; grid-template-columns:190px 1fr; gap:24px; align-items:start}
+@media (max-width:620px){ .card{grid-template-columns:1fr} }
+.thumb{background:#0b1016; border:1px solid var(--line); border-radius:3px; padding:12px}
+.thumb svg{display:block; width:100%; height:auto; max-width:100%}
+.title{font-family:var(--mono); font-size:22px; font-weight:600; letter-spacing:.1em;
+  text-transform:uppercase; margin:0 0 4px; color:var(--fg)}
+.kicker{font-family:var(--mono); font-size:10.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--red); margin:0 0 12px}
+.play{display:inline-block; font-family:var(--mono); font-size:12px; font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase; color:#fff; background:var(--red);
+  border-radius:3px; padding:11px 24px; text-decoration:none; margin-top:6px}
+.play:hover{background:#f2473f}
+.prose{max-width:68ch}
+.prose p{margin:0 0 14px}
+.prose h3{font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--amber); margin:26px 0 10px}
+blockquote{margin:0 0 16px; padding:12px 16px; border-left:2px solid var(--red);
+  background:var(--panel); font-family:var(--mono); font-size:13px; line-height:1.6; color:#c3ccd5}
+blockquote cite{display:block; margin-top:7px; font-family:var(--sans); font-style:normal;
+  font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute)}
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:3px; margin:18px 0 6px}
+.stats div{background:var(--carbon); padding:11px 12px}
+.stats dt{font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--mute); margin:0 0 3px}
+.stats dd{margin:0; font-family:var(--mono); font-size:15px; font-weight:600;
+  color:var(--fg); font-variant-numeric:tabular-nums}
+.stats dd small{display:block; font-size:10px; font-weight:400; color:var(--dim);
+  letter-spacing:.02em; margin-top:2px}
+code{font-family:var(--mono); font-size:.9em; background:var(--panel);
+  border:1px solid var(--line); border-radius:2px; padding:1px 5px}
+pre{font-family:var(--mono); font-size:12px; line-height:1.6; background:var(--panel);
+  border:1px solid var(--line); border-radius:3px; padding:14px; overflow-x:auto; color:#b6c0ca}
+footer{border-top:1px solid var(--line); margin-top:52px; padding-top:22px;
+  font-size:13px; color:var(--mute)}
+footer .prose{max-width:68ch}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="trk" viewBox="150 280 2920 1780">
+    <path d="M2116 1930L2155 1934L2194 1928L2229 1912L2260 1888L2406 1735L2430 1715L2458 1700L2488 1692L2693 1656L2729 1648L2763 1635L2795 1618L2825 1597L2853 1573L2877 1545L2898 1515L2914 1483L2927 1448L2935 1413L2948 1337L2952 1300L2951 1263L2945 1227L2934 1191L2919 1158L2899 1126L2875 1098L2848 1072L2818 1051L2674 963L2647 950L2618 942L2588 939L2558 942L2483 956L2445 958L2409 953L2374 939L2344 918L2319 891L2235 776L2212 749L2185 726L2155 708L2122 696L2087 689L1868 662L1856 660L1844 658L1833 655L1207 472L1202 471L1198 469L1193 468L974 392L939 384L902 383L866 389L832 401L801 421L722 482L691 500L657 510L621 511L586 503L555 487L536 474L506 460L474 455L442 461L414 477L391 500L314 612L295 643L279 677L268 712L261 748L258 785L249 1132L250 1171L254 1210L262 1248L273 1285L288 1322L305 1356L326 1389L350 1420L376 1449L405 1475L437 1498L470 1519L505 1536L541 1550L578 1561Z" fill="none" stroke="#39424e" stroke-width="150" stroke-linejoin="round"/>
+    <path d="M2116 1930L2155 1934L2194 1928L2229 1912L2260 1888L2406 1735L2430 1715L2458 1700L2488 1692L2693 1656L2729 1648L2763 1635L2795 1618L2825 1597L2853 1573L2877 1545L2898 1515L2914 1483L2927 1448L2935 1413L2948 1337L2952 1300L2951 1263L2945 1227L2934 1191L2919 1158L2899 1126L2875 1098L2848 1072L2818 1051L2674 963L2647 950L2618 942L2588 939L2558 942L2483 956L2445 958L2409 953L2374 939L2344 918L2319 891L2235 776L2212 749L2185 726L2155 708L2122 696L2087 689L1868 662L1856 660L1844 658L1833 655L1207 472L1202 471L1198 469L1193 468L974 392L939 384L902 383L866 389L832 401L801 421L722 482L691 500L657 510L621 511L586 503L555 487L536 474L506 460L474 455L442 461L414 477L391 500L314 612L295 643L279 677L268 712L261 748L258 785L249 1132L250 1171L254 1210L262 1248L273 1285L288 1322L305 1356L326 1389L350 1420L376 1449L405 1475L437 1498L470 1519L505 1536L541 1550L578 1561Z" fill="none" stroke="#22262b" stroke-width="96" stroke-linejoin="round"/>
+    <path d="M2116 1930L2155 1934L2194 1928L2229 1912L2260 1888L2406 1735L2430 1715L2458 1700L2488 1692L2693 1656L2729 1648L2763 1635L2795 1618L2825 1597L2853 1573L2877 1545L2898 1515L2914 1483L2927 1448L2935 1413L2948 1337L2952 1300L2951 1263L2945 1227L2934 1191L2919 1158L2899 1126L2875 1098L2848 1072L2818 1051L2674 963L2647 950L2618 942L2588 939L2558 942L2483 956L2445 958L2409 953L2374 939L2344 918L2319 891L2235 776L2212 749L2185 726L2155 708L2122 696L2087 689L1868 662L1856 660L1844 658L1833 655L1207 472L1202 471L1198 469L1193 468L974 392L939 384L902 383L866 389L832 401L801 421L722 482L691 500L657 510L621 511L586 503L555 487L536 474L506 460L474 455L442 461L414 477L391 500L314 612L295 643L279 677L268 712L261 748L258 785L249 1132L250 1171L254 1210L262 1248L273 1285L288 1322L305 1356L326 1389L350 1420L376 1449L405 1475L437 1498L470 1519L505 1536L541 1550L578 1561Z" fill="none" stroke="#e4322b" stroke-width="18" stroke-dasharray="70 90"/>
+    <circle cx="1150" cy="1948" r="60" fill="#58d68d"/>
+  </symbol>
+  <symbol id="pln" viewBox="0 0 300 190">
+    <g stroke="#39424e" stroke-width="13" fill="none">
+      <path d="M8 44H96M204 44H292M8 104H70M230 104H292M8 164H120M228 164H292"/>
+    </g>
+    <g fill="#e4322b">
+      <rect x="92" y="34" width="7" height="20"/><rect x="201" y="34" width="7" height="20"/>
+      <rect x="66" y="94" width="7" height="20"/><rect x="227" y="94" width="7" height="20"/>
+    </g>
+    <path d="M150 128l15 34-15-7-15 7z" fill="#e6ecf3"/>
+    <path d="M150 182V150" stroke="#6fd0e8" stroke-width="4" opacity=".5"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+<header>
+  <h1 class="brand" id="brand">Пипка<span>·</span>игры</h1>
+  <div class="sub" id="sub">Игры для TrackPoint &middot; ThinkPad T480 и всё, что старше</div>
+  <button class="lang-btn" id="btnLang" type="button">EN</button>
+</header>
+<p class="epigraph" id="epi">«Играл с пипкой — проиграл»</p>
+
+<!-- ============================ РУССКИЙ ============================ -->
+<section class="lang" id="ru">
+
+<p class="lede">Красная пипка между клавишами G, H и B называется <b>TrackPoint</b>.
+Она отдаёт не координату, а <b>нажим</b>: внутри тензодатчик, и курсор едет тем быстрее,
+чем сильнее давит палец. Это не мышь — это миниатюрная ручка управления, которая сама
+возвращается в ноль, когда её отпускаешь. Эти две игры сделаны не «под мышь, которая
+бывает пипкой», а именно под нажим: там, где обычная игра читает позицию курсора,
+они читают силу.</p>
+
+<h2>Две игры</h2>
+
+<article class="game">
+  <div class="card">
+    <div>
+      <div class="thumb"><svg viewBox="0 0 300 190"><use href="#pln"/></svg></div>
+      <a class="play" href="plane/index.html">Играть</a>
+    </div>
+    <div class="prose">
+      <p class="kicker">Ночной слалом</p>
+      <h3 class="title" style="margin-top:0">Пипка-Пилот</h3>
+
+      <blockquote>Ленова т480. Хочу игру с самолетиком (ну или предложи идеи получше),
+      чтоб теребить «пипку». Тут такая красная пипка есть которая управляет курсором.
+      Как она называется кстати?<cite>Заказ</cite></blockquote>
+
+      <h3>Так родилась игра</h3>
+      <p>В заказе было спрятано техническое задание, о котором заказчик не подозревал.
+      «Теребить пипку» — это глагол про усилие, а не про точность. Значит, игра не должна
+      требовать попадания в мелкие цели: пипка в этом проигрывает даже тачпаду. Зато она
+      умеет то, чего не умеет мышь, — держать <em>постоянное усилие</em>. Палец лежит
+      и давит; устройство всё это время честно сообщает «меня держат вот с такой силой».</p>
+
+      <p>Отсюда весь дизайн. Самолётик — не прихоть заказчика, а единственно верный жанр:
+      настоящая ручка управления самолётом работает ровно так же. Отклонил — получил не
+      поворот, а <em>скорость</em> поворота. Такое управление называют управлением по
+      производной, и изометрические устройства (те, что меряют силу, а не ход) к нему
+      подходят лучше всего — это давно измеренный факт, а не вкусовщина.</p>
+
+      <p>Технически всё держится на Pointer Lock: браузер отдаёт относительные дельты
+      <code>movementX/Y</code>, я делю их на время кадра и получаю мгновенную скорость
+      курсора в пикселях в секунду — а она у TrackPoint пропорциональна нажиму. Дальше
+      экспоненциальное сглаживание с постоянной 70 мс превращает рваный поток событий
+      в аналоговое отклонение ручки от −1 до +1. Ползунок «чувствительность» — это порог,
+      при котором отклонение считается полным; у разных ThinkPad'ов пипка разной
+      жёсткости, так что настройка обязана быть в интерфейсе, а не в коде.</p>
+
+      <p>Дальше начинается собственно удовольствие. Отклонение задаёт не снос, а крен;
+      крен уже даёт боковое ускорение. Два интегрирования между пальцем и траекторией —
+      это ровно та инерция, из-за которой самолёт «ведут», а не «двигают». Игра получилась
+      про упреждение: створ ворот надо начинать проходить за полсекунды до того, как он
+      доехал до экрана. Индикатор пипки слева внизу показывает живой нажим в px/s — на него
+      залипаешь отдельно, потому что впервые видишь, что делает твой палец.</p>
+
+      <h3>Что пошло не так</h3>
+      <p>Опубликовал — и получил «не работает, не пропадает экран с кнопкой ещё раз».
+      Мой CSS <code>.ov{display:flex}</code> перебивал браузерное правило
+      <code>[hidden]{display:none}</code>, и все три оверлея лежали друг на друге;
+      игра шла под ними. Платформа, куда я публиковал страницу, добавляет это правило
+      сама, поэтому у меня всё работало, а в локальном файле — нет. Урок дешёвый, но
+      показательный: проверял я ту сборку, которой пользователь не пользуется.</p>
+
+      <dl class="stats">
+        <div><dt>Время</dt><dd>14 мин<small>22:03 → 22:17</small></dd></div>
+        <div><dt>Токенов</dt><dd>~76k<small>два хода</small></dd></div>
+        <div><dt>Кода</dt><dd>470 строк<small>один файл, без зависимостей</small></dd></div>
+        <div><dt>Проверено</dt><dd>синтаксис<small>числовых проверок не было</small></dd></div>
+      </dl>
+    </div>
+  </div>
+</article>
+
+<article class="game">
+  <div class="card">
+    <div>
+      <div class="thumb"><svg viewBox="150 280 2920 1780"><use href="#trk"/></svg></div>
+      <a class="play" href="race/index.html">Играть</a>
+    </div>
+    <div class="prose">
+      <p class="kicker">Кольцо в духе Монцы</p>
+      <h3 class="title" style="margin-top:0">Пипка-Трек</h3>
+
+      <blockquote>Сделай еще какую нибудь. Гоночку по кругу, симулятор машинки,
+      не забудь про физику и энерцию.<cite>Заказ</cite></blockquote>
+
+      <p>А потом, уже по готовой игре:</p>
+
+      <blockquote>Добавь отбойники и звук, в тч звук сноса, трассу чуть пошире и побольше
+      поворотов, хз, монцу или еще какую такую трассу.<br><br>
+      И почему машина как на льду. Она не останавливается, поверхность супер скользкая.<br><br>
+      И бесконечно машинка улетает, если ее занесло.<br><br>
+      Задний ход — жестко бесит.<cite>Три следующих заказа</cite></blockquote>
+
+      <h3>Так родилась игра</h3>
+      <p>«Не забудь про физику и инерцию» — самая содержательная часть заказа. Для
+      пипки руль даже удобнее, чем ручка самолёта: настоящий руль тоже управляет не
+      направлением, а <em>скоростью</em> поворота, и тоже самовозвращается в ноль.
+      Палец на пипке и руки на руле делают физически одно и то же.</p>
+
+      <p>Поэтому модель здесь не «аркадная машинка со скольжением», а велосипедная схема
+      с углами увода шин: боковая сила каждой оси считается из поперечной скорости и
+      скорости рыскания, растёт линейно по углу увода и упирается в предел сцепления.
+      Сверху — эллипс трения: чем больше тяги на задней оси, тем меньше бюджета остаётся
+      на боковую силу. Из этой одной формулы само собой получается всё, ради чего такие
+      игры и делают: недостаточная поворачиваемость на входе, срыв кормы от газа,
+      перенос веса под тормозом, занос и выход из него.</p>
+
+      <p>Трассу я сначала строил сплайном по опорным точкам и выбросил этот подход:
+      у сплайна кривизна пикует ровно в опорных точках, и численная проверка показала
+      радиусы 5–8 метров при ширине трассы 10 — внутренняя кромка ленты сворачивалась бы
+      сама в себя. Четыре варианта раскладки провалили ту же проверку. Работающий способ —
+      полигон со скруглением углов дугами заданного радиуса: у каждого поворота радиус
+      задан явно, петля замкнута по построению, а минимальный радиус можно проверить
+      до того, как увидишь результат. Конфигурация в духе Монцы: главная прямая 212 м,
+      Реттифило, Курва Гранде, Роджиа, два Лесмо, прямая Серральо, связка Аскари и
+      длинная Параболика. Круг 869 м, 14 поворотов, ширина 12 м.</p>
+
+      <p>Звук весь синтезирован в WebAudio, сэмплов нет. Важен в нём ровно один канал:
+      визг покрышек повешен на угол увода задней оси, то есть он включается ровно в тот
+      момент, когда зад начинает уходить, и растёт вместе со сносом. Это не украшение —
+      это обратная связь, которой у пипки нет физически. У настоящей ручки есть отдача
+      и ход, у TrackPoint нет ни того, ни другого: палец не чувствует ничего, кроме
+      собственного нажима. Вернуть потерянный канал можно только звуком и картинкой,
+      поэтому визг появляется раньше, чем машина заметно поехала боком, а телеметрия
+      слева внизу показывает угол увода в градусах. По ней ловишь срыв на полсекунды
+      раньше, чем по экрану.</p>
+
+      <h3>Что пошло не так</h3>
+      <p>Первая версия поехала как по льду, и это были два моих бага, оба в одном месте.
+      В эллипсе трения я вычитал из бюджета задней оси 55% <em>полного</em> тормозного
+      усилия (12500 Н против бюджета 6830 Н) — под любым торможением боковое сцепление
+      сзади падало до остаточных 12%. Пипку на себя — и машина мгновенно на льду. Второй:
+      в углах увода стоял множитель <code>Math.sign(V.vx)</code>; как только машину
+      разворачивало и продольная скорость становилась отрицательной, боковая сила меняла
+      знак и начинала <em>разгонять</em> снос. Отсюда «бесконечно улетает, если занесло».</p>
+
+      <p>Чинить это на глаз я больше не стал и написал прогон модели в node:
+      разгон, торможение, накат, руль в упор, выход из заноса, ручник, трава. Проверка
+      тут же нашла ещё три вещи, которых никто не заказывал: задний ход блокировался
+      собственным тормозом, ручник не срывал корму, а на полблока руля при 72 км/ч руль
+      требовал 2.5 g при сцеплении 1.3 — машина уходила в неуправляемый разворот просто
+      от поворота. Теперь ход руля ограничен по сцеплению: при полном отклонении запрос
+      примерно на треть выше предела шин, так что занос спровоцировать можно, а
+      удержанный до упора руль юлу не крутит.</p>
+
+      <p>Последним ушёл задний ход. Он раздражал не потому, что был плохо сделан, а
+      потому, что на пипке у него нет своего жеста: «назад» уже занято тормозом, и
+      отличить «торможу» от «хочу назад» можно только по скорости — то есть по состоянию,
+      которого палец не чувствует. Орган управления с двумя осями не обязан вмещать три
+      намерения. Задний ход убран совсем, выезд из отбойника отдан клавише <code>R</code>.</p>
+
+      <dl class="stats">
+        <div><dt>Время</dt><dd>59 мин<small>22:17 → 23:16, две версии</small></dd></div>
+        <div><dt>Токенов</dt><dd>~120k<small>51k + 69k</small></dd></div>
+        <div><dt>Кода</dt><dd>850 строк<small>+ 14 проверок физики</small></dd></div>
+        <div><dt>Проверено</dt><dd>числом<small>геометрия и динамика</small></dd></div>
+      </dl>
+    </div>
+  </div>
+</article>
+
+<h2>Чему это научило</h2>
+<div class="prose">
+<p>Обе игры про одно: у органа управления есть собственный характер, и игра получается
+тогда, когда она сделана про этот характер, а не вопреки ему. Пипка умеет держать
+усилие и не умеет точно указывать — поэтому здесь нет ни одной задачи на попадание
+курсором, зато обе игры про удержание дуги. Пипка сама возвращается в ноль — поэтому
+отпущенный палец означает «прямо», и ни одной игре не понадобилась мёртвая зона в
+интерфейсе. Пипка ничего не сообщает пальцу в ответ — поэтому и визг покрышек, и
+индикатор нажима, и телеметрия существуют не для красоты.</p>
+<p>И отдельно, уже не про геймдизайн: оба раза в продакшен уехало ровно то, что я не
+измерил. Самолёт — потому что я проверил синтаксис, а не ту сборку, которую открывает
+человек. Машина — потому что я проверил геометрию трассы численно, а динамику оставил
+«на посмотреть глазами». Проверка физики, которую стоило написать сразу, нашла пять
+багов за один прогон, включая три, на которые никто не жаловался.</p>
+</div>
+
+<h2>Запустить у себя</h2>
+<div class="prose">
+<pre>git clone &lt;репозиторий&gt; &amp;&amp; cd pipka
+setsid -f xdg-open index.html &gt;/dev/null 2&gt;&amp;1   # или просто открыть в браузере
+node physics-test.js                              # прогон модели машины</pre>
+<p>Зависимостей и сборки нет: три самодостаточных HTML-файла. <code>setsid -f</code>
+нужен, чтобы Ctrl-C в терминале не убил браузер.</p>
+</div>
+
+</section>
+
+<!-- ============================ ENGLISH ============================ -->
+<section class="lang" id="en" hidden>
+
+<p class="lede">The red nub between the G, H and B keys is a <b>TrackPoint</b>. Russian
+calls it the <b>пипка</b> — the <b>pipka</b> — and that word, with every bit of innuendo
+it carries, is what this whole thing is built on. It reports <b>pressure</b>, not position: there is a strain gauge inside, and the
+pointer moves faster the harder your finger pushes. It is not a mouse — it is a
+miniature control stick that returns to zero by itself the moment you let go.
+These two games are not built for "a mouse that happens to be a pipka"; they are
+built for pressure. Where an ordinary game reads cursor position, they read force.</p>
+
+<h2>Two games</h2>
+
+<article class="game">
+  <div class="card">
+    <div>
+      <div class="thumb"><svg viewBox="0 0 300 190"><use href="#pln"/></svg></div>
+      <a class="play" href="plane/index.html">Play</a>
+    </div>
+    <div class="prose">
+      <p class="kicker">Night slalom</p>
+      <h3 class="title" style="margin-top:0">Pipka Pilot</h3>
+
+      <blockquote>Lenovo T480. I want a game with a little plane (or suggest something
+      better) for fiddling with the "nub". There is this red nub here that moves the
+      cursor. What is it called, by the way?<cite>The brief, translated</cite></blockquote>
+
+      <h3>How the game came out of it</h3>
+      <p>The brief contained a technical specification its author did not know he was
+      writing. "Fiddling with the pipka" is a verb about effort, not about precision. So
+      the game must not ask you to hit small targets: at that the pipka loses even to a
+      touchpad. What it can do instead, and a mouse cannot, is hold a <em>steady
+      force</em>. Your finger rests and pushes, and all the while the device honestly
+      reports "I am being held this hard".</p>
+
+      <p>Everything else follows. The little plane was not an indulgence of the client's
+      whim but the only correct genre: a real aircraft stick works exactly this way.
+      Deflect it and you get not a turn but a <em>turn rate</em>. That arrangement is
+      called rate control, and isometric devices — the ones that measure force rather
+      than travel — pair with it best. That is a measured result, not a matter of taste.</p>
+
+      <p>Technically it rests on Pointer Lock: the browser hands over relative
+      <code>movementX/Y</code> deltas, I divide them by the frame time and get the
+      instantaneous pointer speed in pixels per second — which, on a TrackPoint, is
+      proportional to pressure. An exponential filter with a 70 ms time constant then
+      turns that ragged event stream into an analogue stick deflection from −1 to +1.
+      The sensitivity slider sets the pressure that counts as full deflection; pipkas
+      differ in stiffness from ThinkPad to ThinkPad, so that setting belongs in the
+      interface, not in the source.</p>
+
+      <p>Then the actual pleasure starts. Deflection sets bank, not drift; bank then
+      produces lateral acceleration. Two integrations between finger and trajectory are
+      exactly the inertia that makes you <em>fly</em> the plane rather than move it. The
+      game turned out to be about anticipation: you have to start taking a gate half a
+      second before it reaches the screen. The pipka readout in the bottom left shows live
+      pressure in px/s, and it is weirdly absorbing on its own, because it is the first
+      time you get to see what your fingertip is actually doing.</p>
+
+      <h3>What went wrong</h3>
+      <p>I published it and got back "doesn't work, the screen with the Again button
+      won't go away". My own <code>.ov{display:flex}</code> was overriding the browser's
+      <code>[hidden]{display:none}</code>, so all three overlays sat on top of each
+      other and the game ran underneath them. The platform I published to adds that rule
+      itself, so it worked there and not in the local file. A cheap lesson, but a telling
+      one: I had tested the build the user does not use.</p>
+
+      <dl class="stats">
+        <div><dt>Time</dt><dd>14 min<small>22:03 → 22:17</small></dd></div>
+        <div><dt>Tokens</dt><dd>~76k<small>across two turns</small></dd></div>
+        <div><dt>Code</dt><dd>470 lines<small>one file, no dependencies</small></dd></div>
+        <div><dt>Verified</dt><dd>syntax<small>no numeric checks</small></dd></div>
+      </dl>
+    </div>
+  </div>
+</article>
+
+<article class="game">
+  <div class="card">
+    <div>
+      <div class="thumb"><svg viewBox="150 280 2920 1780"><use href="#trk"/></svg></div>
+      <a class="play" href="race/index.html">Play</a>
+    </div>
+    <div class="prose">
+      <p class="kicker">A Monza-flavoured circuit</p>
+      <h3 class="title" style="margin-top:0">Pipka Circuit</h3>
+
+      <blockquote>Make another one. A circuit race, a little car simulator, and don't
+      forget the physics and the inertia.<cite>The brief, translated</cite></blockquote>
+
+      <p>And then, against the finished game:</p>
+
+      <blockquote>Add armco and sound, including the sound of the slide, make the track
+      a bit wider and give it more corners, dunno, Monza or some track like that.<br><br>
+      And why is the car like on ice. It doesn't stop, the surface is super slippery.<br><br>
+      And the car flies off forever once it spins.<br><br>
+      Reverse gear — seriously annoying.<cite>The three briefs that followed</cite></blockquote>
+
+      <h3>How the game came out of it</h3>
+      <p>"Don't forget the physics and the inertia" was the substantive part. A steering
+      wheel suits the pipka even better than an aircraft stick: a real wheel also commands
+      not a direction but a <em>yaw rate</em>, and it also self-centres. A finger on the
+      nub and hands on a wheel are doing physically the same thing.</p>
+
+      <p>So the model here is not an arcade car with a slip factor but a bicycle model
+      with tyre slip angles: each axle's lateral force comes from the lateral and yaw
+      velocities, grows linearly with slip angle and saturates at the grip limit. On top
+      of that sits the friction ellipse: the more traction the rear axle spends going
+      forward, the less budget it has left to go sideways. That single formula produces,
+      on its own, everything such games are made for — understeer on turn-in, the rear
+      stepping out under power, weight transfer under braking, and the slide and the
+      recovery from it.</p>
+
+      <p>I first built the track as a spline through control points, and threw that
+      approach away: a spline's curvature peaks exactly at the control points, and a
+      numeric check showed radii of 5–8 metres on a 10-metre-wide track, which would fold
+      the inner edge of the ribbon over itself. Four candidate layouts failed the same
+      check. What works is a polygon with its corners filleted by arcs of a given radius:
+      every corner's radius is stated explicitly, the loop closes by construction, and the
+      minimum radius can be verified before you ever look at the result. The layout is
+      Monza-flavoured: a 212 m main straight, Rettifilo, Curva Grande, Roggia, both
+      Lesmos, the Serraglio straight, the Ascari esses and a long Parabolica. 869 m,
+      14 corners, 12 m wide.</p>
+
+      <p>All the sound is synthesised in WebAudio; there are no samples. Exactly one
+      channel really matters: tyre squeal is driven by the rear slip angle, so it comes in
+      at the precise moment the back starts to go and rises with the slide. It is not
+      decoration — it is the feedback channel the pipka physically lacks. A real stick has
+      resistance and travel; a TrackPoint has neither, and the finger feels nothing but
+      its own pressure. The only way to give that channel back is through sound and
+      picture, which is why the squeal arrives before the car visibly steps out, and why
+      the telemetry strip reports the slip angle in degrees. You catch the breakaway on
+      the readout half a second before you see it.</p>
+
+      <h3>What went wrong</h3>
+      <p>The first version drove like it was on ice, and those were two bugs of mine in
+      one place. In the friction ellipse I was subtracting 55% of the <em>total</em>
+      brake force from the rear axle's budget — 12500 N against a budget of 6830 N — so
+      under any braking the rear's lateral grip collapsed to a residual 12%. Pull the pipka
+      back and the car was instantly on ice. The second: the slip angles carried a
+      <code>Math.sign(V.vx)</code> factor, so once the car spun far enough for the
+      longitudinal speed to go negative, the lateral force flipped sign and began to
+      <em>accelerate</em> the slide. Hence "flies off forever once it spins".</p>
+
+      <p>I stopped fixing this by eye and wrote a model run in node: acceleration,
+      braking, coasting, full lock, spin recovery, handbrake, grass. The harness
+      immediately found three more things nobody had asked about: reverse gear was
+      blocked by its own brake, the handbrake did not break the rear loose, and half lock
+      at 72 km/h demanded 2.5 g against 1.3 g of grip, so the car span out from merely
+      being steered. Steering travel is now limited by grip: at full deflection the demand
+      is about a third above the tyres' limit, so a slide can still be provoked, but
+      holding the wheel at the stop no longer spins you.</p>
+
+      <p>Reverse gear went last. It was annoying not because it was badly made but because
+      on a pipka it has no gesture of its own: "back" is already the brake, and telling
+      "I am braking" from "I want to reverse" is only possible from speed — a piece of
+      state the finger cannot feel. A two-axis control is not obliged to carry three
+      intentions. Reverse is gone, and getting off the armco is now the <code>R</code>
+      key.</p>
+
+      <dl class="stats">
+        <div><dt>Time</dt><dd>59 min<small>22:17 → 23:16, two versions</small></dd></div>
+        <div><dt>Tokens</dt><dd>~120k<small>51k + 69k</small></dd></div>
+        <div><dt>Code</dt><dd>850 lines<small>plus 14 physics checks</small></dd></div>
+        <div><dt>Verified</dt><dd>numerically<small>geometry and dynamics</small></dd></div>
+      </dl>
+    </div>
+  </div>
+</article>
+
+<h2>What this taught</h2>
+<div class="prose">
+<p>Both games are about the same thing: a control has a character of its own, and a game
+works when it is built about that character rather than against it. The pipka can hold a
+force and cannot point precisely — so there is not a single pointing task in either game,
+and both are about holding an arc. The pipka returns to zero by itself — so a released
+finger means "straight ahead", and neither game needed a dead zone in its interface. The
+nub tells the finger nothing in return — so the tyre squeal, the pressure readout and the
+telemetry are not there to look nice.</p>
+<p>And separately, not about game design at all: both times what shipped broken was
+precisely what I had not measured. The plane, because I checked the syntax rather than
+the build a human actually opens. The car, because I checked the track geometry
+numerically and left the dynamics to be eyeballed. The physics harness I should have
+written on day one found five bugs in a single run, three of which nobody had complained
+about.</p>
+</div>
+
+<h2>Run it yourself</h2>
+<div class="prose">
+<pre>git clone &lt;repository&gt; &amp;&amp; cd pipka
+setsid -f xdg-open index.html &gt;/dev/null 2&gt;&amp;1   # or just open it in a browser
+node physics-test.js                              # run the car model</pre>
+<p>No dependencies, no build step: three self-contained HTML files. <code>setsid -f</code>
+keeps Ctrl-C in the terminal from killing the browser.</p>
+</div>
+
+</section>
+
+<footer>
+  <div class="prose">
+    <p id="foot">Сделано на ThinkPad, для ThinkPad. Исходники и README на двух языках —
+    в репозитории; физику машины можно перепроверить одной командой.</p>
+  </div>
+</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var LANG;
+  try{ LANG=localStorage.getItem('pipka.lang'); }catch(e){}
+  if(LANG!=='ru'&&LANG!=='en') LANG=((navigator.language||'ru').slice(0,2)==='ru')?'ru':'en';
+  var SUB={ru:'Игры для TrackPoint · ThinkPad T480 и всё, что старше',
+           en:'Games for the TrackPoint · ThinkPad T480 and anything older'};
+  var FOOT={ru:'Сделано на ThinkPad, для ThinkPad. Исходники и README на двух языках — в репозитории; физику машины можно перепроверить одной командой.',
+            en:'Made on a ThinkPad, for a ThinkPad. Sources and a README in both languages are in the repository; the car physics can be re-checked with one command.'};
+  function apply(){
+    document.documentElement.lang=LANG;
+    document.getElementById('ru').hidden=(LANG!=='ru');
+    document.getElementById('en').hidden=(LANG!=='en');
+    document.getElementById('btnLang').textContent=(LANG==='ru'?'EN':'RU');
+    document.getElementById('sub').textContent=SUB[LANG];
+    document.getElementById('brand').innerHTML=BRAND[LANG];
+    document.getElementById('epi').innerHTML=EPI[LANG];
+    document.getElementById('foot').textContent=FOOT[LANG];
+  }
+  document.getElementById('btnLang').addEventListener('click',function(){
+    LANG=(LANG==='ru'?'en':'ru');
+    try{ localStorage.setItem('pipka.lang',LANG); }catch(e){}
+    apply();
+  });
+  apply();
+})();
+</script>
+</body>
+</html>
