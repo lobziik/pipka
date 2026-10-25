@@ -139,7 +139,8 @@ check('свободное падение с 400 м', rr.hit && Math.abs(Math.abs
   rr.t.toFixed(1)+' с, удар на '+Math.abs(L.vy).toFixed(1)+' м/с');
 
 // автопилот: простой контур по вертикальной скорости обязан сажать мягко
-L=lander({y:400,vy:-3});
+// (стартовые условия те же, что в игре: 220 м, снижение 6 м/с)
+L=lander({y:220,vy:-6});
 rr=fly(L,(l)=>{
   const want=Math.max(-20,Math.min(-0.8,-(l.y*0.16+0.7)));
   return {thr:Math.max(0,Math.min(1,hoverThr(l.fuel)+(want-l.vy)*0.95)), rot:0};
@@ -149,7 +150,7 @@ check('автопилот садится мягко', rr.hit && Math.abs(L.vy)<L
     (LAND.fuel0-L.fuel).toFixed(0)+' кг из '+LAND.fuel0):'не долетел');
 
 // запас топлива: на номинальную посадку должно уходить заметно меньше бака
-L=lander({y:400,vy:-3});
+L=lander({y:220,vy:-6});
 rr=fly(L,(l)=>{
   const want=Math.max(-20,Math.min(-0.8,-(l.y*0.16+0.7)));
   return {thr:Math.max(0,Math.min(1,hoverThr(l.fuel)+(want-l.vy)*0.95)), rot:0};

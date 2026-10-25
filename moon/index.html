@@ -57,6 +57,8 @@ body{
 .tele .bar i{position:absolute; left:0; top:0; bottom:0; width:0; background:var(--cyan); display:block}
 .tele .bar i.fuel{background:var(--amber)}
 .tele .bar i.low{background:var(--red)}
+#map{position:absolute; right:10px; bottom:10px; border:1px solid var(--line);
+  background:rgba(10,13,18,.78); border-radius:3px}
 .arrow{position:absolute; font-family:var(--mono); font-size:11px; letter-spacing:.1em; color:var(--amber);
   background:rgba(10,13,18,.8); border:1px solid var(--line); border-radius:3px; padding:3px 7px; white-space:nowrap}
 .ov{position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; text-align:center; background:rgba(5,7,12,.9); padding:20px}
@@ -113,6 +115,7 @@ body{
     <div class="rate"><span id="rate">0</span> px/s</div>
   </div>
 
+  <canvas id="map" width="168" height="76"></canvas>
   <div class="arrow" id="arrow" hidden>▸</div>
 
   <div class="ov" id="ovStart">
@@ -285,11 +288,20 @@ var G={phase:'start', mis:1, score:0, lives:3, twr:0, alt:0, contact:false,
 
 /* ======================= РЕЛЬЕФ ======================= */
 var WORLD=2600;                 /* ширина мира, м */
-var NS=560, GH=[], PADS=[];
+var NS=560, GH=[], RIDGE=[], PADS=[];
 function terrain(mis){
-  GH=[]; PADS=[];
+  GH=[]; RIDGE=[]; PADS=[];
   var i, base=120, ph=[];
   for(i=0;i<5;i++) ph.push({a:(46/(i+1))*(0.6+Math.random()*0.8), k:(1.6+i*2.4)*(0.7+Math.random()*0.6), p:Math.random()*6.283});
+  /* дальний хребет: рисуется с параллаксом, даёт заднику глубину */
+  var rp=[];
+  /* периоды целые: иначе кривая не смыкается сама с собой и на стыке ступенька */
+  for(i=0;i<3;i++) rp.push({a:(120/(i+1))*(0.7+Math.random()*0.6), k:i+1, p:Math.random()*6.283});
+  for(i=0;i<NS;i++){
+    var ur=i/NS, hr=190;
+    for(var jr=0;jr<rp.length;jr++) hr+=rp[jr].a*Math.sin(ur*6.283*rp[jr].k+rp[jr].p);
+    RIDGE.push(hr);
+  }
   for(i=0;i<NS;i++){
     var u=i/NS, h=base;
     for(var j=0;j<ph.length;j++) h+=ph[j].a*Math.sin(u*6.283*ph[j].k+ph[j].p);
@@ -520,7 +532,40 @@ function finish(ok,why,aborted,pad,vs){
 var stars=[];
 function makeStars(){
   stars=[];
-  for(var i=0;i<140;i++) stars.push({x:Math.random()*WORLD, y:260+Math.random()*700, r:Math.random()<0.2?1.6:1});
+  /* доли экрана, а не мировые координаты: так небо покрыто при любом зуме */
+  for(var i=0;i<150;i++) stars.push({u:Math.random(), v:Math.random(), r:Math.random()<0.2?1.6:1});
+}
+var mapBake=document.createElement('canvas'); mapBake.width=168; mapBake.height=76;
+var mapEl, mapCtx;
+function bakeMap(){
+  if(!mapCtx) return;
+  var g=mapBake.getContext('2d'), i;
+  g.clearRect(0,0,168,76);
+  var maxH=0; for(i=0;i<NS;i++) if(GH[i]>maxH) maxH=GH[i];
+  var top=maxH+330;
+  mapBake.sy=76/top; mapBake.sx=168/WORLD;
+  g.beginPath(); g.moveTo(0,76);
+  for(i=0;i<NS;i+=2) g.lineTo(i*mapBake.sx, 76-GH[i]*mapBake.sy);
+  g.lineTo(168,76); g.closePath();
+  g.fillStyle='#2b333c'; g.fill();
+  g.beginPath();
+  for(i=0;i<NS;i+=2){ var x=i*mapBake.sx, y=76-GH[i]*mapBake.sy; if(i===0)g.moveTo(x,y); else g.lineTo(x,y); }
+  g.strokeStyle='#59636f'; g.lineWidth=1; g.stroke();
+  for(var p=0;p<PADS.length;p++){
+    var pd=PADS[p];
+    g.fillStyle='#58d68d';
+    g.fillRect((pd.x-pd.half)*mapBake.sx, 76-pd.y*mapBake.sy-2, Math.max(3,pd.half*2*mapBake.sx), 2);
+  }
+}
+function drawMap(){
+  if(!mapCtx) return;
+  mapCtx.clearRect(0,0,168,76);
+  mapCtx.drawImage(mapBake,0,0);
+  var x=V.x*mapBake.sx, y=76-V.y*mapBake.sy, gy=76-groundAt(V.x)*mapBake.sy;
+  mapCtx.strokeStyle='rgba(111,208,232,.4)'; mapCtx.lineWidth=1;
+  mapCtx.beginPath(); mapCtx.moveTo(x+0.5,Math.max(1,y)); mapCtx.lineTo(x+0.5,gy); mapCtx.stroke();
+  mapCtx.fillStyle='#e6ecf3';
+  mapCtx.beginPath(); mapCtx.arc(x, Math.max(2.5,y), 2.6, 0, 6.283); mapCtx.fill();
 }
 function resize(){
   var r=field.getBoundingClientRect();
@@ -532,35 +577,68 @@ function resize(){
 window.addEventListener('resize',resize);
 
 function paint(){
-  var zoom=Math.max(0.3,Math.min(5.2, 190/Math.max(14,G.alt+6)));
+  /* Зум обратно пропорционален высоте, поэтому грунт всегда примерно в 260 px
+     под модулем — и на подходе, и у самой площадки. */
+  var zoom=Math.max(1.0,Math.min(4.5, 260/Math.max(58,G.alt+10)));
   var sh=G.shake>0.3?(Math.random()-0.5)*G.shake:0;
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.fillStyle='#05070c'; ctx.fillRect(0,0,W,H);
-  var camX=V.x, camY=V.y+ (H*0.12)/zoom;
+  /* камера ниже модуля: он сидит в верхней четверти, под ним видно грунт */
+  var camX=V.x, camY=V.y-(H*0.28)/zoom;
   function sx(x){ return W/2+(x-camX)*zoom+sh }
   function sy(y){ return H/2-(y-camY)*zoom+sh*0.6 }
 
-  /* звёзды с параллаксом */
+  /* звёзды: экранная сетка со сдвигом и заворотом */
+  var ox=(camX*zoom*0.12)%W, oy=(camY*zoom*0.12)%H;
   for(var i=0;i<stars.length;i++){
     var s=stars[i];
-    var px=W/2+(s.x-camX)*zoom*0.25, py=H/2-(s.y-camY)*zoom*0.25;
-    if(px<-5||px>W+5||py<-5||py>H+5) continue;
+    var px=(s.u*W-ox+W*2)%W, py=(s.v*H+oy+H*2)%H;
     ctx.fillStyle = s.r>1?'rgba(190,210,235,.75)':'rgba(130,155,180,.45)';
     ctx.fillRect(px,py,s.r,s.r);
   }
+
+  /* Земля в небе — почти неподвижна */
+  var ex=W*0.82-(camX*zoom*0.012)%40, ey=H*0.17+(camY*zoom*0.012)%24;
+  ctx.beginPath(); ctx.arc(ex,ey,17,0,6.283);
+  ctx.fillStyle='#2a4a74'; ctx.fill();
+  ctx.beginPath(); ctx.arc(ex-4,ey-3,13,0,6.283);
+  ctx.fillStyle='#3f6f9e'; ctx.fill();
+  ctx.beginPath(); ctx.arc(ex-6,ey-5,7,0,6.283);
+  ctx.fillStyle='rgba(180,205,225,.45)'; ctx.fill();
+
+  /* дальний хребет с параллаксом */
+  var par=0.42, rstep=WORLD/NS;
+  var i0r=Math.floor((camX-(W/2)/(zoom*par))/rstep)-1;
+  var i1r=Math.ceil((camX+(W/2)/(zoom*par))/rstep)+1;
+  function rwrap(k){ return RIDGE[((k%NS)+NS)%NS] }   /* хребет замкнут, за краем мира продолжается */
+  function rsx(k){ return W/2+(k*rstep-camX)*zoom*par+sh }
+  function rsy(k){ return H/2-(rwrap(k)-camY)*zoom*par+sh*0.6 }
+  ctx.beginPath();
+  ctx.moveTo(-40, rsy(i0r));
+  for(var kr=i0r;kr<=i1r;kr++) ctx.lineTo(rsx(kr), rsy(kr));
+  ctx.lineTo(W+40, rsy(i1r));
+  ctx.lineTo(W+40,H+40); ctx.lineTo(-40,H+40); ctx.closePath();
+  ctx.fillStyle='#10151b'; ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-40, rsy(i0r));
+  for(var kr2=i0r;kr2<=i1r;kr2++) ctx.lineTo(rsx(kr2), rsy(kr2));
+  ctx.lineTo(W+40, rsy(i1r));
+  ctx.strokeStyle='#2c343d'; ctx.lineWidth=1; ctx.stroke();
 
   /* рельеф */
   var x0=camX-(W/2)/zoom-20, x1=camX+(W/2)/zoom+20;
   var i0=Math.max(0,Math.floor(x0/WORLD*NS)), i1=Math.min(NS-1,Math.ceil(x1/WORLD*NS));
   ctx.beginPath();
-  ctx.moveTo(sx(i0*(WORLD/NS)), sy(GH[i0]));
+  ctx.moveTo(-40, sy(GH[i0]));
   for(var k=i0;k<=i1;k++) ctx.lineTo(sx(k*(WORLD/NS)), sy(GH[k]));
-  ctx.lineTo(sx(i1*(WORLD/NS)), H+40); ctx.lineTo(sx(i0*(WORLD/NS)), H+40);
+  ctx.lineTo(W+40, sy(GH[i1]));
+  ctx.lineTo(W+40,H+40); ctx.lineTo(-40,H+40);
   ctx.closePath();
   ctx.fillStyle='#1b1f26'; ctx.fill();
   ctx.strokeStyle='#59636f'; ctx.lineWidth=1.5; ctx.beginPath();
-  ctx.moveTo(sx(i0*(WORLD/NS)), sy(GH[i0]));
+  ctx.moveTo(-40, sy(GH[i0]));
   for(var k2=i0;k2<=i1;k2++) ctx.lineTo(sx(k2*(WORLD/NS)), sy(GH[k2]));
+  ctx.lineTo(W+40, sy(GH[i1]));
   ctx.stroke();
 
   /* площадки */
@@ -597,8 +675,9 @@ function paint(){
   }
   ctx.globalAlpha=1;
 
-  if(G.phase!=='end'||G.result) drawLander(sx,sy,Math.max(zoom,1.9),zoom);
+  if(G.phase!=='end'||G.result) drawLander(sx,sy,Math.max(zoom,4.2),zoom);
   drawPadArrow(sx);
+  drawMap();
 }
 function drawLander(sx,sy,ds,zoom){
   ctx.save();
@@ -707,11 +786,13 @@ function frame(ts){
 /* ======================= ФАЗЫ ======================= */
 function deploy(){
   terrain(G.mis); makeStars();
-  var startX = 180+Math.random()*180;
-  V.x=startX; V.y=groundAt(startX)+430;
-  V.vx=10+Math.random()*8; V.vy=-3; V.th=0; V.w=0;
+  var startX = 420+Math.random()*260;
+  V.x=startX; V.y=groundAt(startX)+220;
+  V.vx=8+Math.random()*6; V.vy=-6; V.th=0; V.w=0;
   V.thr=0; V.tq=0;
   G.dust=[]; G.debris=[]; G.contact=false; G.shake=0; G.fuelWarned=false;
+  G.alt=V.y-LEG-groundAt(V.x);
+  bakeMap();
   stick.x=0; stick.y=0; accX=0; accY=0; acc=0;
 }
 function begin(){
@@ -773,6 +854,7 @@ el('btnLang').addEventListener('click',function(){
 function boot(saved){
   if(saved&&saved.best>best) best=saved.best;
   if(saved&&saved.sens){ sens=saved.sens; sl.value=sens; sv.textContent=sens+' px/s'; }
+  mapEl=el('map'); mapCtx=mapEl.getContext('2d');
   applyLang(); resize();
   V.fuel=LAND.fuel0; deploy();
   paint(); hud(1);
