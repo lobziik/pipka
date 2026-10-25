@@ -22,9 +22,10 @@ into an analogue stick deflection of −1…+1.
 | `plane/index.html` | **Pipka Pilot** — night slalom: bank, inertia, gates |
 | `race/index.html` | **Pipka Circuit** — Monza-flavoured circuit, armco, sound |
 | `moon/index.html` | **Pipka Cosmonaut** — lunar landing: analogue throttle, fuel, contact lamp |
+| `danmaku/index.html` | **Pipka Danmaku** — almost Touhou: procedural waves, Cirno every ninth, generated music |
 | `physics-test.js` | Car model run: `node physics-test.js` |
 
-No dependencies and no build step: three self-contained HTML files.
+No dependencies and no build step: four self-contained HTML files.
 
 ```sh
 setsid -f xdg-open index.html >/dev/null 2>&1   # or just open it in a browser
@@ -50,6 +51,10 @@ telling braking from reversing needs a piece of state the finger cannot feel.
 left/right commands rotation rate, `R` aborts the approach. On a pad the margins are
 2.5 m/s down, 1.2 m/s sideways and 8° of tilt; bare ground will take you too, but three
 times tighter (0.85, 0.40 and 3°) and without the pad's score multiplier.
+
+**Pipka Danmaku** — the pipka is the ship's velocity (let go and you stop), the left
+button or `Shift` is focus (slower, hitbox shown), the right button or `X` is a bomb.
+Firing is automatic.
 
 ## Sensitivity
 
@@ -130,6 +135,31 @@ required, and the whole thing inside the 3200×2100 px world. The start/finish l
 placed on the middle of the main straight and kerbs are laid out from the sign of the
 curvature.
 
+## Danmaku
+
+The field is 384×448 logical pixels, Touhou's native size, scaled to fit the window, so
+bullet speeds do not depend on the monitor. Only the white dot in the middle of the ship
+can be hit; bullets passing within 16 px of it count as graze. Flying above the top quarter
+pulls every item on screen to you.
+
+Each wave is built on the spot from 2–4 groups: a formation (line, stream, vee, arc, big
+fairy, rain, pair) times a pattern (aimed, fan, ring, spray, rice; spiral, flower, petals and
+wall for big fairies). Formations and patterns unlock with the wave number; bullet speed,
+bullets per volley, toughness, rate of fire and fairy count then grow towards ceilings set
+in `diff()`, chosen so that late waves are dense rather than fast. Every ninth wave is
+Cirno: five spell phases on the first loop, six from the second, with more hit points and
+the safe gap in "Icicle Fall" closed by aimed shots.
+
+The music is generated: a minor chord progression, a two-bar motif made by a random walk
+over the scale with strong beats pulled to chord tones, repeated over the next chords. A
+25% pulse lead with an echo, sawtooth octave bass, a 12.5% pulse arpeggio and noise drums.
+The seed is the loop number; Cirno has her own theme. Music can be switched off separately
+from the effects.
+
+Checked by a bot in headless Chromium, not by ear: a bot that only shies away from bullets
+dies on waves 6–8, an immortal one reaches wave 27 at a peak of 830 bullets on screen. Under
+software rasterisation 2000 bullets cost 8.7 ms a frame.
+
 ## Sound
 
 Everything is synthesised in WebAudio, no samples: the engine is a sawtooth plus a
@@ -146,14 +176,14 @@ Per-game write-ups — what was asked, how the request turned into that game, wh
 nub's character dictated and what shipped broken — are on the site hub (`index.html`),
 in both languages. The short version:
 
-| | Pipka Pilot | Pipka Circuit | Pipka Cosmonaut |
-|---|---|---|---|
-| Wall clock | 14 min | 59 min, two versions | 52 min |
-| Tokens | ~76k | ~120k | ~55k |
-| Code | 470 lines | 850 lines + 14 checks | 790 lines + 9 checks |
-| Verified | syntax only | numerically | numerically, before publishing |
-| Shipped broken | overlays never hid | ice, endless spin | nothing |
-| Model | Opus 5 (`claude-opus-5`) | Opus 5 | Opus 5 |
+| | Pipka Pilot | Pipka Circuit | Pipka Cosmonaut | Pipka Danmaku |
+|---|---|---|---|---|
+| Wall clock | 14 min | 59 min, two versions | 52 min | ~20 min |
+| Tokens | ~76k | ~120k | ~55k | ~200k |
+| Code | 470 lines | 850 lines + 14 checks | 790 lines + 9 checks | 1300 lines |
+| Verified | syntax only | numerically | numerically, before publishing | by bot and timing, not by ear |
+| Shipped broken | overlays never hid | ice, endless spin | nothing | not known yet |
+| Model | Opus 5 (`claude-opus-5`) | Opus 5 | Opus 5 | Opus 5.5 (`claude-opus-5-5`) |
 
 The first two times what shipped broken was exactly what had not been measured. For the
 third the harness existed before the first publish and caught two discrepancies — a

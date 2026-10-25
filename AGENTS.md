@@ -10,6 +10,7 @@ index.html         site hub, bilingual, per-game developer notes
 plane/index.html   Pipka Pilot      — self-contained game
 race/index.html    Pipka Circuit    — self-contained game
 moon/index.html    Pipka Cosmonaut  — self-contained game
+danmaku/index.html Pipka Danmaku    — self-contained game
 physics-test.js    model harness for the car and the lander (node, no deps)
 LICENSE            MIT
 README.md          English
