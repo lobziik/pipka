@@ -95,6 +95,18 @@ footer .prose{max-width:68ch}
     <path d="M2116 1930L2155 1934L2194 1928L2229 1912L2260 1888L2406 1735L2430 1715L2458 1700L2488 1692L2693 1656L2729 1648L2763 1635L2795 1618L2825 1597L2853 1573L2877 1545L2898 1515L2914 1483L2927 1448L2935 1413L2948 1337L2952 1300L2951 1263L2945 1227L2934 1191L2919 1158L2899 1126L2875 1098L2848 1072L2818 1051L2674 963L2647 950L2618 942L2588 939L2558 942L2483 956L2445 958L2409 953L2374 939L2344 918L2319 891L2235 776L2212 749L2185 726L2155 708L2122 696L2087 689L1868 662L1856 660L1844 658L1833 655L1207 472L1202 471L1198 469L1193 468L974 392L939 384L902 383L866 389L832 401L801 421L722 482L691 500L657 510L621 511L586 503L555 487L536 474L506 460L474 455L442 461L414 477L391 500L314 612L295 643L279 677L268 712L261 748L258 785L249 1132L250 1171L254 1210L262 1248L273 1285L288 1322L305 1356L326 1389L350 1420L376 1449L405 1475L437 1498L470 1519L505 1536L541 1550L578 1561Z" fill="none" stroke="#e4322b" stroke-width="18" stroke-dasharray="70 90"/>
     <circle cx="1150" cy="1948" r="60" fill="#58d68d"/>
   </symbol>
+  <symbol id="lnd" viewBox="0 0 300 190">
+    <path d="M0 150l34-8 26 6 30-14 28 4 22-10 30 2 26-12 32 6 24-4 28 10v60H0z" fill="#1b1f26" stroke="#59636f" stroke-width="2.5"/>
+    <g stroke="#58d68d" stroke-width="4"><path d="M150 128h44"/></g>
+    <text x="172" y="120" fill="#58d68d" font-size="15" font-family="monospace" text-anchor="middle">×3</text>
+    <g transform="translate(96 62)">
+      <path d="M-7 14l-13 16M7 14l13 16M-25 30h10M15 30h10" stroke="#9aa4af" stroke-width="3" stroke-linecap="round"/>
+      <rect x="-13" y="-3" width="26" height="17" fill="#d7dde4"/>
+      <path d="M-8-3l2-15h12l2 15z" fill="#e6ecf3"/>
+      <rect x="-13" y="-3" width="26" height="4" fill="#e4322b"/>
+      <path d="M-5 14h10l-3 22h-4z" fill="#f0b429" opacity=".85"/>
+    </g>
+  </symbol>
   <symbol id="pln" viewBox="0 0 300 190">
     <g stroke="#39424e" stroke-width="13" fill="none">
       <path d="M8 44H96M204 44H292M8 104H70M230 104H292M8 164H120M228 164H292"/>
@@ -122,11 +134,11 @@ footer .prose{max-width:68ch}
 <p class="lede">Красная пипка между клавишами G, H и B называется <b>TrackPoint</b>.
 Она отдаёт не координату, а <b>нажим</b>: внутри тензодатчик, и курсор едет тем быстрее,
 чем сильнее давит палец. Это не мышь — это миниатюрная ручка управления, которая сама
-возвращается в ноль, когда её отпускаешь. Эти две игры сделаны не «под мышь, которая
+возвращается в ноль, когда её отпускаешь. Эти игры сделаны не «под мышь, которая
 бывает пипкой», а именно под нажим: там, где обычная игра читает позицию курсора,
 они читают силу.</p>
 
-<h2>Две игры</h2>
+<h2>Три игры</h2>
 
 <article class="game">
   <div class="card">
@@ -183,6 +195,7 @@ footer .prose{max-width:68ch}
         <div><dt>Токенов</dt><dd>~76k<small>два хода</small></dd></div>
         <div><dt>Кода</dt><dd>470 строк<small>один файл, без зависимостей</small></dd></div>
         <div><dt>Проверено</dt><dd>синтаксис<small>числовых проверок не было</small></dd></div>
+        <div><dt>Модель</dt><dd>Opus 5<small>claude-opus-5</small></dd></div>
       </dl>
     </div>
   </div>
@@ -272,6 +285,80 @@ footer .prose{max-width:68ch}
         <div><dt>Токенов</dt><dd>~120k<small>51k + 69k</small></dd></div>
         <div><dt>Кода</dt><dd>850 строк<small>+ 14 проверок физики</small></dd></div>
         <div><dt>Проверено</dt><dd>числом<small>геометрия и динамика</small></dd></div>
+        <div><dt>Модель</dt><dd>Opus 5<small>claude-opus-5</small></dd></div>
+      </dl>
+    </div>
+  </div>
+</article>
+
+<article class="game">
+  <div class="card">
+    <div>
+      <div class="thumb"><svg viewBox="0 0 300 190"><use href="#lnd"/></svg></div>
+      <a class="play" href="moon/index.html">Играть</a>
+    </div>
+    <div class="prose">
+      <p class="kicker">Посадка на Луну</p>
+      <h3 class="title" style="margin-top:0">Пипка-Космонавт</h3>
+
+      <blockquote>Что ты там еще предлагал? лунар лендер?<br><br>
+      Нужен звук. Делай.<cite>Заказ</cite></blockquote>
+
+      <h3>Так родилась игра</h3>
+      <p>Лендер я предложил сам ещё в первом ответе и считаю его лучшим кандидатом из
+      всего, что приходило в голову. Классический Lunar Lander всю жизнь страдал от
+      одного: тяга у него бинарная. Клавиша нажата или нет, и весь нюанс посадки
+      сводится к частоте долбёжки по пробелу. Пипка снимает ровно это ограничение —
+      она умеет держать 47% и подбирать их на процент-другой пальцем.</p>
+
+      <p>Поэтому тяговооружённость выставлена ровно в два: половина хода пипки — это
+      зависание. Не «где-то в районе трети», а именно середина, чтобы нажим читался как
+      «тяжелее или легче собственного веса». Сильнее — всплываешь, слабее — садишься;
+      вся игра живёт в узкой полосе вокруг середины, и попасть в неё можно только
+      аналоговым органом управления. Горизонтальная ось задаёт скорость вращения, а не
+      момент: отклонил — модуль поворачивается с этой скоростью, отпустил — замирает.
+      Это снова управление по производной, то же самое, что крен в самолёте и руль
+      в машине.</p>
+
+      <p>Со звуком получилось интереснее, чем я ждал. Ракетный двигатель — это не тон,
+      а широкополосный шум, поэтому главный двигатель собран из шума через ФНЧ: срез
+      едет вверх с дросселем, и по тембру слышно процентов пять тяги, которые на полоске
+      прибора ещё не видны. Снизу подмешан гул корпуса на 41 Гц, двигатели ориентации
+      шипят через ФВЧ, когда работают. Это не украшение: у пипки нет ни отдачи, ни хода,
+      палец не чувствует вообще ничего, и звук — единственный канал, который работает
+      быстрее глаза.</p>
+
+      <p>Из приборов самый апполоновский — лампа «Контакт». У настоящего лунного модуля
+      из опор торчали полутораметровые щупы, и когда они касались грунта, в кабине
+      загоралась лампа: это был сигнал глушить двигатель. Здесь она загорается за метр
+      до касания и делает ровно то же самое — говорит, что торговаться уже поздно.</p>
+
+      <p>Отдельная физическая деталь, которую я не планировал, а обнаружил, когда считал
+      баланс: на Луне висеть дёшево. Расход на зависание пропорционален отношению
+      скорости истечения к гравитации, а гравитация маленькая, поэтому с реалистичным
+      удельным импульсом топлива хватает на минуты болтанки. Чтобы оно стало настоящим
+      ограничением, бак обязан быть маленьким относительно сухой массы — 40 кг против
+      820. Это не произвол, это следствие лунной физики: драматургию топлива здесь
+      создаёт не двигатель, а размер бака.</p>
+
+      <h3>Что пошло не так</h3>
+      <p>На этот раз — ничего, что уехало бы к игроку, и это прямое следствие прошлых
+      двух раз. Прогон физики я написал до публикации, и он сразу поймал два
+      расхождения: тяговооружённость вышла 3.12 вместо обещанных двух (я считал её для
+      раннего варианта масс и не пересчитал, когда ужал бак), а бак оказался вчетверо
+      больше номинальной посадки, то есть топливо вообще не было ограничением. Обе
+      константы правились по измерению, а не на глаз: сейчас тяговооружённость 2.12,
+      зависание на 47%, номинальная посадка съедает 21 кг из 40.</p>
+
+      <p>Ещё игру переименовали на ходу: она начиналась как «Пипка-Луна», а стала
+      «Пипка-Космонавт» — по-моему, честнее.</p>
+
+      <dl class="stats">
+        <div><dt>Время</dt><dd>52 мин<small>одним ходом</small></dd></div>
+        <div><dt>Токенов</dt><dd>~55k</dd></div>
+        <div><dt>Кода</dt><dd>790 строк<small>+ 9 проверок физики</small></dd></div>
+        <div><dt>Проверено</dt><dd>числом<small>до публикации, а не после</small></dd></div>
+        <div><dt>Модель</dt><dd>Opus 5<small>claude-opus-5</small></dd></div>
       </dl>
     </div>
   </div>
@@ -286,11 +373,13 @@ footer .prose{max-width:68ch}
 отпущенный палец означает «прямо», и ни одной игре не понадобилась мёртвая зона в
 интерфейсе. Пипка ничего не сообщает пальцу в ответ — поэтому и визг покрышек, и
 индикатор нажима, и телеметрия существуют не для красоты.</p>
-<p>И отдельно, уже не про геймдизайн: оба раза в продакшен уехало ровно то, что я не
+<p>И отдельно, уже не про геймдизайн: первые два раза в продакшен уехало ровно то, что я не
 измерил. Самолёт — потому что я проверил синтаксис, а не ту сборку, которую открывает
 человек. Машина — потому что я проверил геометрию трассы численно, а динамику оставил
 «на посмотреть глазами». Проверка физики, которую стоило написать сразу, нашла пять
-багов за один прогон, включая три, на которые никто не жаловался.</p>
+багов за один прогон, включая три, на которые никто не жаловался. В третьей игре он был
+написан до публикации и поймал два расхождения ещё до того, как их кто-то увидел — это
+единственная из трёх, которая уехала к игроку целой.</p>
 </div>
 
 <h2>Запустить у себя</h2>
@@ -312,10 +401,10 @@ goes by <b>pipka</b>, which is what these games are named after.
 It reports <b>pressure</b>, not position: there is a strain gauge inside, and the
 pointer moves faster the harder your finger pushes. It is not a mouse — it is a
 miniature control stick that returns to zero by itself the moment you let go.
-These two games are not built for "a mouse that happens to be a pipka"; they are
+These games are not built for "a mouse that happens to be a pipka"; they are
 built for pressure. Where an ordinary game reads cursor position, they read force.</p>
 
-<h2>Two games</h2>
+<h2>Three games</h2>
 
 <article class="game">
   <div class="card">
@@ -375,6 +464,7 @@ built for pressure. Where an ordinary game reads cursor position, they read forc
         <div><dt>Tokens</dt><dd>~76k<small>across two turns</small></dd></div>
         <div><dt>Code</dt><dd>470 lines<small>one file, no dependencies</small></dd></div>
         <div><dt>Verified</dt><dd>syntax<small>no numeric checks</small></dd></div>
+        <div><dt>Model</dt><dd>Opus 5<small>claude-opus-5</small></dd></div>
       </dl>
     </div>
   </div>
@@ -468,6 +558,82 @@ built for pressure. Where an ordinary game reads cursor position, they read forc
         <div><dt>Tokens</dt><dd>~120k<small>51k + 69k</small></dd></div>
         <div><dt>Code</dt><dd>850 lines<small>plus 14 physics checks</small></dd></div>
         <div><dt>Verified</dt><dd>numerically<small>geometry and dynamics</small></dd></div>
+        <div><dt>Model</dt><dd>Opus 5<small>claude-opus-5</small></dd></div>
+      </dl>
+    </div>
+  </div>
+</article>
+
+<article class="game">
+  <div class="card">
+    <div>
+      <div class="thumb"><svg viewBox="0 0 300 190"><use href="#lnd"/></svg></div>
+      <a class="play" href="moon/index.html">Play</a>
+    </div>
+    <div class="prose">
+      <p class="kicker">A lunar landing</p>
+      <h3 class="title" style="margin-top:0">Pipka Cosmonaut</h3>
+
+      <blockquote>What else was it you suggested? a lunar lander?<br><br>
+      It needs sound. Go.<cite>The brief, translated</cite></blockquote>
+
+      <h3>How the game came out of it</h3>
+      <p>I had proposed the lander myself back in the first reply, and I still think it is
+      the best candidate of everything that came to mind. The classic Lunar Lander has
+      always suffered from one thing: its thrust is binary. A key is down or it is not,
+      and the whole nuance of a landing collapses into how fast you can hammer the
+      spacebar. The pipka removes exactly that limit — it can hold 47% and trim it by a
+      percent or two with a fingertip.</p>
+
+      <p>So the thrust-to-weight ratio is set to exactly two: half the pipka travel is a
+      hover. Not "somewhere around a third" but the middle, so that pressure reads as
+      "heavier or lighter than your own weight". Push harder and you float, ease off and
+      you descend; the entire game lives in a narrow band around the centre, and the only
+      way into that band is an analogue control. The horizontal axis commands rotation
+      <em>rate</em> rather than torque: deflect and the lander turns at that rate, release
+      and it stops. Rate control again — the same thing as bank in the plane and the
+      steering wheel in the car.</p>
+
+      <p>The sound turned out more interesting than I expected. A rocket engine is not a
+      tone but broadband noise, so the main engine is noise through a low-pass whose
+      cutoff rises with throttle; you can hear five percent of thrust in the timbre before
+      the instrument bar shows it. A 41 Hz body rumble sits underneath, and the attitude
+      thrusters hiss through a high-pass when they fire. None of it is decoration: the
+      pipka has neither resistance nor travel, the finger feels nothing at all, and sound
+      is the only channel that beats the eye.</p>
+
+      <p>The most Apollo thing on the panel is the Contact lamp. The real lunar module had
+      metre-and-a-half probes hanging off its footpads, and when they touched the surface
+      a light came on in the cabin — the cue to shut the engine down. Here it lights a
+      metre before touchdown and does exactly the same job: it tells you the negotiating
+      is over.</p>
+
+      <p>One piece of physics I did not plan but found while balancing the fuel: hovering
+      on the Moon is cheap. Hover endurance scales with exhaust velocity over gravity, and
+      lunar gravity is small, so with a realistic specific impulse there is fuel for
+      minutes of dithering. For fuel to become a real constraint the tank has to be small
+      relative to the dry mass — 40 kg against 820. That is not an arbitrary choice but a
+      consequence of lunar physics: here the drama of fuel is created by the size of the
+      tank, not by the engine.</p>
+
+      <h3>What went wrong</h3>
+      <p>This time, nothing that reached the player — which is a direct consequence of the
+      previous two times. The physics harness was written before publishing, and it caught
+      two discrepancies immediately: the thrust-to-weight ratio came out at 3.12 instead of
+      the promised two (I had computed it for an earlier mass budget and never redid it
+      after shrinking the tank), and the tank was four times a nominal descent, so fuel was
+      not a constraint at all. Both constants were fixed from measurements rather than by
+      eye: it is now 2.12, the hover sits at 47%, and a nominal descent eats 21 kg of 40.</p>
+
+      <p>The game was also renamed mid-build: it started as "Pipka Moon" and became
+      "Pipka Cosmonaut", which is the better name.</p>
+
+      <dl class="stats">
+        <div><dt>Time</dt><dd>52 min<small>one turn</small></dd></div>
+        <div><dt>Tokens</dt><dd>~55k</dd></div>
+        <div><dt>Code</dt><dd>790 lines<small>plus 9 physics checks</small></dd></div>
+        <div><dt>Verified</dt><dd>numerically<small>before publishing, not after</small></dd></div>
+        <div><dt>Model</dt><dd>Opus 5<small>claude-opus-5</small></dd></div>
       </dl>
     </div>
   </div>
@@ -482,12 +648,13 @@ and both are about holding an arc. The pipka returns to zero by itself — so a 
 finger means "straight ahead", and neither game needed a dead zone in its interface. The
 nub tells the finger nothing in return — so the tyre squeal, the pressure readout and the
 telemetry are not there to look nice.</p>
-<p>And separately, not about game design at all: both times what shipped broken was
-precisely what I had not measured. The plane, because I checked the syntax rather than
+<p>And separately, not about game design at all: the first two times what shipped broken
+was precisely what I had not measured. The plane, because I checked the syntax rather than
 the build a human actually opens. The car, because I checked the track geometry
 numerically and left the dynamics to be eyeballed. The physics harness I should have
 written on day one found five bugs in a single run, three of which nobody had complained
-about.</p>
+about. For the third game it existed before the first publish and caught two discrepancies
+before anyone saw them — the only one of the three that reached the player intact.</p>
 </div>
 
 <h2>Run it yourself</h2>

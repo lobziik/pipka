@@ -21,6 +21,7 @@ into an analogue stick deflection of −1…+1.
 | `index.html` | Site hub: both games plus a developer's note on each |
 | `plane/index.html` | **Pipka Pilot** — night slalom: bank, inertia, gates |
 | `race/index.html` | **Pipka Circuit** — Monza-flavoured circuit, armco, sound |
+| `moon/index.html` | **Pipka Cosmonaut** — lunar landing: analogue throttle, fuel, contact lamp |
 | `physics-test.js` | Car model run: `node physics-test.js` |
 
 No dependencies and no build step: three self-contained HTML files.
@@ -44,6 +45,10 @@ language (the choice is shared across the site through `localStorage`).
 back is the brake, `Space` is the handbrake, `R` puts you back on the track.
 There is no reverse gear: on a two-axis control "back" is already the brake, and
 telling braking from reversing needs a piece of state the finger cannot feel.
+
+**Pipka Cosmonaut** — forward/back is the throttle (half travel is a hover),
+left/right commands rotation rate, `R` aborts the approach. Land on a pad at no more
+than 2.5 m/s down, 1.2 m/s sideways and 8° of tilt.
 
 ## Sensitivity
 
@@ -84,6 +89,26 @@ Measured by `node physics-test.js`: 0–100 km/h in 6.4 s, top speed 146 km/h, 1
 to a stop in 45 m at an average 1.02 g, coasting 108 → 18 km/h in 12.8 s, full lock at
 72 km/h pulls 1.22 g without spinning, a spin damps itself in 2.7 s.
 
+## Lander physics
+
+Metric too, same fixed 1/120 s step, extracted for the harness between the
+`LANDER-CORE` markers:
+
+* lunar gravity 1.62 m/s², dry mass 820 kg, 40 kg of fuel, 2950 N of thrust — a
+  thrust-to-weight ratio of 2.12, so **half the pipka travel is a hover** (47%);
+* the throttle is proportional to pressure, which is the entire point: a finger can hold
+  47%, a key cannot;
+* the horizontal axis commands rotation *rate*, which the attitude thrusters track with a
+  torque limit, burning fuel in proportion;
+* fuel burns at thrust over exhaust velocity (250 s specific impulse), and the lander gets
+  livelier as the tank empties;
+* hovering on the Moon is physically cheap — endurance scales with exhaust velocity over
+  gravity — so the tank has to be small against the dry mass for fuel to be a real
+  constraint at all. A nominal descent eats 21 kg of the 40.
+
+Landing limits: 2.5 m/s vertical, 1.2 m/s lateral, 8° of tilt, both legs on the pad. The
+Contact lamp lights a metre before touchdown, as the real lunar module's probes did.
+
 ## The circuit
 
 Monza-flavoured: a 212 m main straight, Rettifilo, Curva Grande, Roggia, both Lesmos,
@@ -118,15 +143,19 @@ Per-game write-ups — what was asked, how the request turned into that game, wh
 nub's character dictated and what shipped broken — are on the site hub (`index.html`),
 in both languages. The short version:
 
-| | Pipka Pilot | Pipka Circuit |
-|---|---|---|
-| Wall clock | 14 min | 59 min, two versions |
-| Tokens | ~76k | ~120k |
-| Code | 470 lines | 850 lines + 14 checks |
-| Verified | syntax only | numerically |
-| Shipped broken | overlays never hid | ice, endless spin |
+| | Pipka Pilot | Pipka Circuit | Pipka Cosmonaut |
+|---|---|---|---|
+| Wall clock | 14 min | 59 min, two versions | 52 min |
+| Tokens | ~76k | ~120k | ~55k |
+| Code | 470 lines | 850 lines + 14 checks | 790 lines + 9 checks |
+| Verified | syntax only | numerically | numerically, before publishing |
+| Shipped broken | overlays never hid | ice, endless spin | nothing |
+| Model | Opus 5 (`claude-opus-5`) | Opus 5 | Opus 5 |
 
-Both times what shipped broken was exactly what had not been measured.
+The first two times what shipped broken was exactly what had not been measured. For the
+third the harness existed before the first publish and caught two discrepancies — a
+thrust-to-weight ratio of 3.12 where the design called for 2, and a tank four times a
+nominal descent — before anyone saw them.
 
 ## License
 

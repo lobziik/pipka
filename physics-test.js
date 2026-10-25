@@ -100,5 +100,86 @@ V=fresh({vx:25});
 r=run(V,{steer:0,gas:0,brk:0,hb:false},20,GRASS,v=>v.vx<=5);
 check('накат по траве 90→18 км/ч', r.out && r.out.t<12, r.out?r.out.t.toFixed(1)+' с':'>20 с');
 
+
+/* ================= ЛУННЫЙ МОДУЛЬ ================= */
+const srcM=fs.readFileSync(path.join(__dirname,'moon','index.html'),'utf8');
+const A2=srcM.indexOf('/* --- LANDER-CORE-BEGIN --- */'), B2=srcM.indexOf('/* --- LANDER-CORE-END --- */');
+if(A2<0||B2<0){ console.error('не нашёл маркеры LANDER-CORE в moon/index.html'); process.exit(2); }
+eval(srcM.slice(A2,B2));   // определяет LAND и landStep
+
+function lander(o){ return Object.assign({x:0,y:400,vx:0,vy:0,th:0,w:0,fuel:LAND.fuel0,thr:0,tq:0}, o||{}) }
+function fly(L,In,secs,stop){
+  let t=0, r=null;
+  for(let i=0;i<Math.round(secs/DT);i++){
+    r=landStep(L,typeof In==='function'?In(L,t):In,DT);
+    t+=DT;
+    if(!isFinite(L.y)||!isFinite(L.vy)||!isFinite(L.th)) return {t,nan:true,r};
+    if(stop&&stop(L,t)) return {t,r,hit:true};
+  }
+  return {t,r};
+}
+const hoverThr=(fuel)=>((LAND.dry+fuel)*LAND.g)/LAND.thrust;
+
+// тяговооружённость и дроссель зависания
+let L=lander(), rr=landStep(L,{thr:1,rot:0},DT);
+check('тяговооружённость на полной заправке', rr.twr>1.7 && rr.twr<2.4, rr.twr.toFixed(2));
+check('дроссель зависания', hoverThr(LAND.fuel0)>0.4 && hoverThr(LAND.fuel0)<0.62,
+  (hoverThr(LAND.fuel0)*100).toFixed(0)+'% полный бак → '+(hoverThr(0)*100).toFixed(0)+'% пустой');
+
+// висение на половине хода: высота не должна уезжать
+L=lander({y:100});
+fly(L,(l)=>({thr:hoverThr(l.fuel),rot:0}),20);
+check('зависание держит высоту', Math.abs(L.y-100)<2.5 && L.fuel>0,
+  'ушло на '+(L.y-100).toFixed(2)+' м за 20 с, топлива осталось '+L.fuel.toFixed(0)+' кг');
+
+// свободное падение с 400 м
+L=lander({y:400});
+rr=fly(L,{thr:0,rot:0},120,(l)=>l.y<=0);
+check('свободное падение с 400 м', rr.hit && Math.abs(Math.abs(L.vy)-Math.sqrt(2*LAND.g*400))<1,
+  rr.t.toFixed(1)+' с, удар на '+Math.abs(L.vy).toFixed(1)+' м/с');
+
+// автопилот: простой контур по вертикальной скорости обязан сажать мягко
+L=lander({y:400,vy:-3});
+rr=fly(L,(l)=>{
+  const want=Math.max(-20,Math.min(-0.8,-(l.y*0.16+0.7)));
+  return {thr:Math.max(0,Math.min(1,hoverThr(l.fuel)+(want-l.vy)*0.95)), rot:0};
+},240,(l)=>l.y<=0);
+check('автопилот садится мягко', rr.hit && Math.abs(L.vy)<LAND.vLand && L.fuel>0,
+  rr.hit?('касание на '+Math.abs(L.vy).toFixed(2)+' м/с за '+rr.t.toFixed(0)+' с, израсходовано '+
+    (LAND.fuel0-L.fuel).toFixed(0)+' кг из '+LAND.fuel0):'не долетел');
+
+// запас топлива: на номинальную посадку должно уходить заметно меньше бака
+L=lander({y:400,vy:-3});
+rr=fly(L,(l)=>{
+  const want=Math.max(-20,Math.min(-0.8,-(l.y*0.16+0.7)));
+  return {thr:Math.max(0,Math.min(1,hoverThr(l.fuel)+(want-l.vy)*0.95)), rot:0};
+},240,(l)=>l.y<=0);
+const used=LAND.fuel0-L.fuel;
+check('бак примерно вдвое больше номинала', used>LAND.fuel0*0.3 && used<LAND.fuel0*0.75,
+  'номинал '+used.toFixed(0)+' кг, бак '+LAND.fuel0+' кг');
+
+// вращение: отклонение задаёт скорость, а не момент
+L=lander({y:200});
+fly(L,{thr:0,rot:1},1.5);
+check('вращение выходит на заданную скорость', Math.abs(L.w-LAND.omegaMax)<0.05,
+  L.w.toFixed(3)+' рад/с при пределе '+LAND.omegaMax);
+fly(L,{thr:0,rot:0},1.5);
+check('отпущенная пипка гасит вращение', Math.abs(L.w)<0.03, L.w.toFixed(4)+' рад/с');
+
+// пустой бак: тяги нет, NaN нет
+L=lander({y:300,fuel:0});
+rr=fly(L,{thr:1,rot:1},10);
+check('пустой бак не даёт тяги', !rr.nan && L.vy<0 && Math.abs(L.w)<1e-9,
+  'вертикальная '+L.vy.toFixed(1)+' м/с, вращение '+L.w.toFixed(3));
+
+// снос гасится наклоном: 15 м/с вбок должно убираться за разумное время и топливо
+L=lander({y:400,vx:15});
+rr=fly(L,(l)=>({thr:hoverThr(l.fuel)*1.15, rot:0, }),0.001);
+L.th=-0.35;  // наклон против сноса
+rr=fly(L,(l)=>({thr:hoverThr(l.fuel)/Math.cos(l.th), rot:0}),60,(l)=>l.vx<=0);
+check('снос 15 м/с гасится наклоном 20°', rr.hit && rr.t<30,
+  rr.hit?(rr.t.toFixed(1)+' с, потрачено '+(LAND.fuel0-L.fuel).toFixed(0)+' кг'):'не погасился за 60 с');
+
+
 console.log('— прошло —'); ok.forEach(s=>console.log('  ✓ '+s));
 if(bad.length){ console.log('— ПРОВАЛ —'); bad.forEach(s=>console.log('  ✗ '+s)); process.exitCode=1; }

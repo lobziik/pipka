@@ -7,9 +7,11 @@ Guidance for agents and humans working in this repository.
 
 ```
 index.html         site hub, bilingual, per-game developer notes
-plane/index.html   Nub Pilot    — self-contained game
-race/index.html    Nub Circuit  — self-contained game
-physics-test.js    car model harness (node, no deps)
+plane/index.html   Pipka Pilot      — self-contained game
+race/index.html    Pipka Circuit    — self-contained game
+moon/index.html    Pipka Cosmonaut  — self-contained game
+physics-test.js    model harness for the car and the lander (node, no deps)
+LICENSE            MIT
 README.md          English
 README.ru.md       Russian
 .nojekyll          GitHub Pages serves the files as they are
@@ -21,11 +23,17 @@ that way: these pages are meant to run from `file://` on a fifteen-year-old lapt
 
 ## Hard rules
 
-1. **Run the physics harness after touching the car model.**
-   `node physics-test.js` — all checks must pass. It extracts the model straight out of
-   `race/index.html` between the `PHYSICS-CORE-BEGIN` / `PHYSICS-CORE-END` markers, so
-   the test and the game cannot drift apart. Do not move those markers, and do not make
-   `carStep` depend on anything outside `CAR` and its arguments (no DOM, no track data).
+1. **Run the physics harness after touching either model.**
+   `node physics-test.js` — all checks must pass. It extracts the models straight out of
+   the games: the car from `race/index.html` between `PHYSICS-CORE-BEGIN` /
+   `PHYSICS-CORE-END`, the lander from `moon/index.html` between `LANDER-CORE-BEGIN` /
+   `LANDER-CORE-END`. Test and game therefore cannot drift apart. Do not move those
+   markers, and keep `carStep` and `landStep` dependent on nothing outside their constants
+   (`CAR`, `LAND`) and their arguments — no DOM, no terrain, no track data.
+
+   The lander's balance in particular is set by measurement: thrust is chosen so that the
+   thrust-to-weight ratio is ~2 (half the pipka travel hovers), and the tank is sized at
+   roughly 2.5× the fuel a nominal automated descent consumes. Both are asserted.
 
 2. **No reverse gear in the car.** It was removed on purpose: on a two-axis pressure
    control, "back" is already the brake, and distinguishing braking from reversing needs
@@ -91,5 +99,7 @@ The local files stay the source of truth; the fragment is generated, never edite
 
 Russian comments in the game sources, matching the existing density: explain *why* a
 constant has the value it has (what it was measured against), not what the line does.
+Game display names are the Russian ones with an English pair in the `TXT` dictionary; the
+device is a TrackPoint, called the *pipka* in both languages.
 Keep prose in the READMEs and on the hub plain and specific; the developer notes on the
 hub are first-person and name what went wrong.
