@@ -3,8 +3,7 @@
 > «Играл с пипкой — проиграл» — *played with the pipka, lost the game.*
 
 Games for the **TrackPoint** — the red nub between the G, H and B keys of a ThinkPad.
-Russian calls it the **пипка**, the *pipka*, and that word — innuendo included — is what
-this whole thing is built on.
+Here it goes by **pipka**, which is what these games are named after.
 
 [Русская версия](README.ru.md) · Live site: enable GitHub Pages on this repository
 (Settings → Pages → Deploy from branch, root) and open `/`.
