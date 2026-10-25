@@ -159,6 +159,22 @@ const used=LAND.fuel0-L.fuel;
 check('бак примерно вдвое больше номинала', used>LAND.fuel0*0.3 && used<LAND.fuel0*0.75,
   'номинал '+used.toFixed(0)+' кг, бак '+LAND.fuel0+' кг');
 
+// допуски вне площадки должны быть именно «сильно ниже», а не чуть-чуть
+check('допуски на грунте втрое строже',
+  LAND.vLandRough<=LAND.vLand*0.4 && LAND.vSideRough<=LAND.vSide*0.4 && LAND.tiltRough<=LAND.tiltLand*0.4,
+  LAND.vLandRough+' / '+LAND.vSideRough+' м/с и '+(LAND.tiltRough*57.3).toFixed(1)+
+  '° против '+LAND.vLand+' / '+LAND.vSide+' и '+(LAND.tiltLand*57.3).toFixed(0)+'°');
+
+// посадка на грунт в принципе достижима: автопилот должен в неё укладываться
+L=lander({y:220,vy:-6});
+rr=fly(L,(l)=>{
+  const want=Math.max(-20,Math.min(-0.5,-(l.y*0.14+0.45)));
+  return {thr:Math.max(0,Math.min(1,hoverThr(l.fuel)+(want-l.vy)*0.95)), rot:0};
+},240,(l)=>l.y<=0);
+check('на грунт сесть можно', rr.hit && Math.abs(L.vy)<LAND.vLandRough,
+  'касание на '+Math.abs(L.vy).toFixed(2)+' м/с при допуске '+LAND.vLandRough+
+  ' (запас '+((LAND.vLandRough-Math.abs(L.vy))*1000).toFixed(0)+' мм/с)');
+
 // вращение: отклонение задаёт скорость, а не момент
 L=lander({y:200});
 fly(L,{thr:0,rot:1},1.5);

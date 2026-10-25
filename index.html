@@ -350,6 +350,15 @@ footer .prose{max-width:68ch}
       константы правились по измерению, а не на глаз: сейчас тяговооружённость 2.12,
       зависание на 47%, номинальная посадка съедает 21 кг из 40.</p>
 
+      <p>А вот что я всё-таки заложил неудачно, и это вылезло на первом же заходе: любое
+      касание вне площадки засчитывалось как обломки, даже идеально мягкое. Игрок погасил
+      скорость до 1.61 м/с — внутри всех допусков — и всё равно погиб, просто потому что
+      под опорами был не бетон. Выглядит это как «сделал всё правильно, игра всё равно
+      убила». Теперь вне площадки сесть можно, но допуски там втрое строже (0.85 м/с вниз
+      против 2.5), а множитель даёт только площадка: промах стоит очков, а не модуля.
+      Заодно экран обломков показывал вертикальную скорость даже тогда, когда она была
+      ни при чём, — теперь он называет ту величину, которая действительно не сошлась.</p>
+
       <p>Ещё игру переименовали на ходу: она начиналась как «Пипка-Луна», а стала
       «Пипка-Космонавт» — по-моему, честнее.</p>
 
@@ -624,6 +633,15 @@ built for pressure. Where an ordinary game reads cursor position, they read forc
       after shrinking the tank), and the tank was four times a nominal descent, so fuel was
       not a constraint at all. Both constants were fixed from measurements rather than by
       eye: it is now 2.12, the hover sits at 47%, and a nominal descent eats 21 kg of 40.</p>
+
+      <p>What I did get wrong by design showed up on the very first approach: any touchdown
+      off a pad counted as wreckage, however gentle. The player had the speed down to
+      1.61 m/s — inside every margin — and died anyway, purely because there was rock rather
+      than concrete under the legs. That reads as "I did everything right and the game killed
+      me". Bare ground is now survivable, but three times tighter (0.85 m/s down against
+      2.5), and only a pad pays a multiplier: a miss costs score, not the lander. The
+      wreckage screen was also reporting vertical speed when vertical speed was not the
+      problem; it now names whatever actually failed.</p>
 
       <p>The game was also renamed mid-build: it started as "Pipka Moon" and became
       "Pipka Cosmonaut", which is the better name.</p>

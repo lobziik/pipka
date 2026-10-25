@@ -47,8 +47,9 @@ There is no reverse gear: on a two-axis control "back" is already the brake, and
 telling braking from reversing needs a piece of state the finger cannot feel.
 
 **Pipka Cosmonaut** — forward/back is the throttle (half travel is a hover),
-left/right commands rotation rate, `R` aborts the approach. Land on a pad at no more
-than 2.5 m/s down, 1.2 m/s sideways and 8° of tilt.
+left/right commands rotation rate, `R` aborts the approach. On a pad the margins are
+2.5 m/s down, 1.2 m/s sideways and 8° of tilt; bare ground will take you too, but three
+times tighter (0.85, 0.40 and 3°) and without the pad's score multiplier.
 
 ## Sensitivity
 
@@ -106,7 +107,9 @@ Metric too, same fixed 1/120 s step, extracted for the harness between the
   gravity — so the tank has to be small against the dry mass for fuel to be a real
   constraint at all. A nominal descent eats 21 kg of the 40.
 
-Landing limits: 2.5 m/s vertical, 1.2 m/s lateral, 8° of tilt, both legs on the pad. The
+Landing limits depend on what is under the legs: on a pad 2.5 m/s vertical, 1.2 m/s
+lateral and 8° of tilt; on bare ground 0.85 m/s, 0.40 m/s and 3°, with no score
+multiplier. The instrument panel shows whichever limits apply where you are, and the
 Contact lamp lights a metre before touchdown, as the real lunar module's probes did.
 
 ## The circuit

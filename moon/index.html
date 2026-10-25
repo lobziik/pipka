@@ -176,7 +176,7 @@ ru:{brand:'Пипка-Космонавт', titleH:'Пипка<span>-</span>Ко�
  mission:'Посадка', score:'Счёт', rec:'Рекорд', contact:'Контакт', livesT:'Запас модулей',
  alt:'Высота', vspd:'Вертикаль', hspd:'Горизонт', tilt:'Крен', twr:'Тяга/вес',
  thr:'Дроссель', fuel:'Топливо', nub:'Пипка',
- intro:'Лунная гравитация 1.62 м/с², двигатель даёт двукратную тяговооружённость, так что ровно половина хода пипки — это зависание. Садиться надо на площадку, мягко и без крена: не быстрее 2.5 м/с вниз, 1.2 м/с вбок и 8° наклона.',
+ intro:'Лунная гравитация 1.62 м/с², двигатель даёт двукратную тяговооружённость, так что ровно половина хода пипки — это зависание. На площадке допуск: не быстрее 2.5 м/с вниз, 1.2 м/с вбок и 8° наклона. Сесть можно и на голый грунт, но там втрое строже — 0.85, 0.40 и 3°.',
  k1:'<b>вперёд / назад</b> — дроссель, плавно от нуля до полного',
  k2:'<b>влево / вправо</b> — скорость вращения, двигатели ориентации жгут топливо',
  k3:'<b>R</b> — прервать заход, <b>Esc</b> — пауза, <b>стрелки</b> — запас',
@@ -196,12 +196,15 @@ ru:{brand:'Пипка-Космонавт', titleH:'Пипка<span>-</span>Ко�
  badMiss:'Мимо площадки: там камни, а не бетон.',
  badFuel:'Топливо кончилось, дальше только свободное падение.',
  over:'Модули кончились',
- sScore:'Счёт', sFuel:'Топливо', sVs:'Вертикаль', sPad:'Площадка', sTotal:'Всего'},
+ sScore:'Счёт', sFuel:'Топливо', sVs:'Вертикаль', sPad:'Площадка', sTotal:'Всего',
+ sDist:'До площадки', sHs:'Горизонт', sTilt:'Крен', sGround:'Грунт',
+ okRough:'Сели на голый грунт. Модуль цел, но площадка дала бы множитель.',
+ roughNote:'Вне площадки допуски втрое строже.'},
 en:{brand:'Pipka Cosmonaut', titleH:'Pipka<span>-</span>Cosmonaut',
  mission:'Landing', score:'Score', rec:'Best', contact:'Contact', livesT:'Landers in reserve',
  alt:'Altitude', vspd:'Vertical', hspd:'Lateral', tilt:'Tilt', twr:'Thrust/weight',
  thr:'Throttle', fuel:'Fuel', nub:'Pipka',
- intro:'Lunar gravity is 1.62 m/s² and the engine gives a thrust-to-weight of two, so exactly half of the pipka travel is a hover. Put it down on a pad, softly and upright: no more than 2.5 m/s down, 1.2 m/s sideways and 8° of tilt.',
+ intro:'Lunar gravity is 1.62 m/s² and the engine gives a thrust-to-weight of two, so exactly half of the pipka travel is a hover. On a pad the margins are 2.5 m/s down, 1.2 m/s sideways and 8° of tilt. Bare ground will take you too, but three times tighter: 0.85, 0.40 and 3°.',
  k1:'<b>forward / back</b> — throttle, smoothly from nothing to full',
  k2:'<b>left / right</b> — rotation rate; the attitude thrusters burn fuel',
  k3:'<b>R</b> — abort the approach, <b>Esc</b> — pause, <b>arrows</b> — fallback',
@@ -221,7 +224,10 @@ en:{brand:'Pipka Cosmonaut', titleH:'Pipka<span>-</span>Cosmonaut',
  badMiss:'Off the pad: that is rock down there, not concrete.',
  badFuel:'Out of fuel, and from here it is just falling.',
  over:'No landers left',
- sScore:'Score', sFuel:'Fuel', sVs:'Vertical', sPad:'Pad', sTotal:'Total'}};
+ sScore:'Score', sFuel:'Fuel', sVs:'Vertical', sPad:'Pad', sTotal:'Total',
+ sDist:'To the pad', sHs:'Lateral', sTilt:'Tilt', sGround:'Bare ground',
+ okRough:'Down on bare ground. The lander is intact, but a pad would have paid a multiplier.',
+ roughNote:'Off the pad the margins are three times tighter.'}};
 var LANG=store('pipka.lang')||(((navigator.language||'ru').slice(0,2)==='ru')?'ru':'en');
 function t(k){ var d=TXT[LANG]||TXT.ru; return d[k]!==undefined?d[k]:(TXT.ru[k]!==undefined?TXT.ru[k]:k); }
 function applyLang(){
@@ -252,9 +258,13 @@ var LAND={
   rcsK:3.2,          /* жёсткость отработки угловой скорости */
   rcsTau:2300,       /* предел момента двигателей ориентации, Н·м */
   rcsBurn:9e-5,      /* расход ориентации, кг на Н·м в секунду */
-  vLand:2.5,         /* допуск вертикальной скорости, м/с */
-  vSide:1.2,         /* допуск сноса, м/с */
-  tiltLand:0.14      /* допуск крена, рад (8°) */
+  vLand:2.5,         /* допуск вертикальной скорости на площадке, м/с */
+  vSide:1.2,         /* допуск сноса на площадке, м/с */
+  tiltLand:0.14,     /* допуск крена на площадке, рад (8°) */
+  /* Вне площадки сесть тоже можно, но втрое аккуратнее: там грунт и камни. */
+  vLandRough:0.85,
+  vSideRough:0.40,
+  tiltRough:0.05     /* 2.9° */
 };
 function landStep(V,In,dt){
   var L=LAND;
@@ -455,6 +465,7 @@ function step(dt){
   var g0=groundAt(V.x);
   G.alt=V.y-LEG-g0;
   G.contact = G.alt<1.0;
+  G.overPad = !!padAt(V.x);
 
   /* границы мира — мягко не пускаем за край */
   if(V.x<30){ V.x=30; V.vx=Math.abs(V.vx)*0.3; }
@@ -481,29 +492,33 @@ function step(dt){
   if(G.alt<=0){
     var pad=padAt(V.x);
     var onPad = pad && Math.abs(V.x-pad.x) <= pad.half-BODY*0.6;
+    var lv = onPad?LAND.vLand:LAND.vLandRough;
+    var ls = onPad?LAND.vSide:LAND.vSideRough;
+    var lt = onPad?LAND.tiltLand:LAND.tiltRough;
     var vs=-V.vy, hs=Math.abs(V.vx), tilt=Math.abs(V.th);
     V.y=g0+LEG;
-    if(!onPad) finish(false,'badMiss');
-    else if(vs>LAND.vLand) finish(false,'badFast');
-    else if(hs>LAND.vSide) finish(false,'badSide');
-    else if(tilt>LAND.tiltLand) finish(false,'badTilt');
-    else finish(true, vs<1.0?'okSoft':'okHard', false, pad, vs);
+    if(vs>lv) finish(false,'badFast',false,null,0,onPad);
+    else if(hs>ls) finish(false,'badSide',false,null,0,onPad);
+    else if(tilt>lt) finish(false,'badTilt',false,null,0,onPad);
+    else finish(true, onPad?(vs<1.0?'okSoft':'okHard'):'okRough', false, onPad?pad:null, vs, onPad);
   } else if(V.fuel<=0 && G.alt>0 && !G.fuelWarned){
     G.fuelWarned=true;
   }
 }
 
-function finish(ok,why,aborted,pad,vs){
+function finish(ok,why,aborted,pad,vs,onPad){
   G.phase='end';
   quiet();
   var add=0, stats=[];
+  var un=LANG==='ru'?' м/с':' m/s', kg=LANG==='ru'?' кг':' kg';
   if(ok){
     var fuelLeft=Math.round(V.fuel);
     var soft=Math.max(0,Math.round((LAND.vLand-vs)*40));
-    add=Math.round((120+fuelLeft*3+soft)*pad.mult);
+    var mult=pad?pad.mult:1;
+    add=Math.round((120+fuelLeft*3+soft)*mult);
     G.score+=add;
-    stats=[[t('sPad'),'×'+pad.mult],[t('sVs'),vs.toFixed(2)+' м/с'],
-           [t('sFuel'),fuelLeft+' кг'],[t('sScore'),'+'+add]];
+    stats=[[pad?t('sPad'):t('sGround'),'×'+mult],[t('sVs'),vs.toFixed(2)+un],
+           [t('sFuel'),fuelLeft+kg],[t('sScore'),'+'+add]];
     chime();
     el('endH').textContent=t('landed'); el('endH').className='good';
   } else {
@@ -513,11 +528,19 @@ function finish(ok,why,aborted,pad,vs){
       var a=Math.random()*6.283, s=8+Math.random()*34;
       G.debris.push({x:V.x,y:V.y,vx:Math.cos(a)*s,vy:Math.abs(Math.sin(a))*s,t:1.2+Math.random()});
     }
-    stats=[[t('sVs'),Math.abs(V.vy).toFixed(2)+' м/с'],[t('sScore'),G.score]];
+    var near=null,nd=1e9;
+    for(var q=0;q<PADS.length;q++){ var dq=Math.abs(PADS[q].x-V.x); if(dq<nd){nd=dq;near=PADS[q];} }
+    var miss=near?Math.max(0,Math.round(nd-near.half)):0;
+    var unit=un, mu=LANG==='ru'?' м':' m';
+    if(why==='badFast')      stats=[[t('sVs'),Math.abs(V.vy).toFixed(2)+unit]];
+    else if(why==='badSide') stats=[[t('sHs'),Math.abs(V.vx).toFixed(2)+unit]];
+    else if(why==='badTilt') stats=[[t('sTilt'),Math.round(Math.abs(V.th)*57.3)+'°']];
+    else                     stats=[[t('sDist'),miss+mu]];
+    stats.push([t('sScore'),G.score]);
     el('endH').textContent=t('crashed'); el('endH').className='';
   }
   if(G.score>best){ best=G.score; store('pipka.moon.best',best); }
-  el('endP').textContent=t(aborted?'badMiss':why);
+  el('endP').textContent=t(aborted?'badMiss':why)+(!ok&&!onPad&&!aborted?(' '+t('roughNote')):'');
   var html='';
   stats.forEach(function(s2){ html+='<div>'+s2[0]+'<b>'+s2[1]+'</b></div>'; });
   if(G.lives<=0) html+='<div>'+t('sTotal')+'<b>'+G.score+'</b></div>';
@@ -740,13 +763,16 @@ var hudT=0;
 function hud(dt){
   hudT+=dt; if(hudT<0.08) return; hudT=0;
   var vs=-V.vy, hs=Math.abs(V.vx), tilt=Math.abs(V.th)*57.3;
+  var lv=G.overPad?LAND.vLand:LAND.vLandRough;
+  var ls=G.overPad?LAND.vSide:LAND.vSideRough;
+  var lt=(G.overPad?LAND.tiltLand:LAND.tiltRough)*57.3;
   el('tAlt').textContent=Math.max(0,G.alt).toFixed(G.alt<100?1:0);
   var e1=el('tVs'); e1.textContent=(V.vy<=0?'-':'+')+Math.abs(V.vy).toFixed(2);
-  e1.className = vs>LAND.vLand ? 'bad' : (G.alt<40?'ok':'');
+  e1.className = vs>lv ? 'bad' : (G.alt<40?'ok':'');
   var e2=el('tHs'); e2.textContent=hs.toFixed(2);
-  e2.className = hs>LAND.vSide ? 'bad' : (G.alt<40?'ok':'');
+  e2.className = hs>ls ? 'bad' : (G.alt<40?'ok':'');
   var e3=el('tTilt'); e3.textContent=tilt.toFixed(0)+'°';
-  e3.className = tilt>LAND.tiltLand*57.3 ? 'bad' : (G.alt<40?'ok':'');
+  e3.className = tilt>lt ? 'bad' : (G.alt<40?'ok':'');
   var e4=el('tTwr'); e4.textContent=G.twr.toFixed(2);
   e4.className = G.twr>=1 ? 'ok' : '';
   el('tThr').textContent=Math.round((V.thr||0)*100)+'%';
