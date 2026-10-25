@@ -128,6 +128,10 @@ in both languages. The short version:
 
 Both times what shipped broken was exactly what had not been measured.
 
+## License
+
+[MIT](LICENSE).
+
 ## Repository conventions
 
 Documentation comes in pairs (`README.md` / `README.ru.md`); game UI strings live in a
