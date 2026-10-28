@@ -94,6 +94,11 @@
 английское произношение; теперь у каждого языка в настройках своё — русское и
 британское RP. Буквы заодно стали звуками, как в букваре: «ммм», а не «эм».</p>
 
+<p>И праздник шёл дважды: в конце слова два раза радуга, две фанфары и лишняя бабочка.
+Таймер праздника тикал уже во время чтения слова по буквам и успевал дойти до фанфары, а
+после чтения праздник запускался заново. Бот этого не видел: он считал собранные слова,
+а не фанфары. Теперь считает и их — по одной на слово.</p>
+
 <p>«Ребёнок» опять был ботом. Тот, что летит прямо к нужной букве, собирает короткое
 слово за 3–6 секунд, длинное с двумя лишними — за 4–8. Тот, что давит в случайную
 сторону, на первом уровне собирает слово за 12–169 секунд, медиана около 80, на
@@ -182,6 +187,12 @@ letters, at the longest pauses, and the script says when the model ran two toget
 The generator also pulled Russian letters towards English pronunciation; now each
 language has its own in the settings, Russian and British RP. And the letters became
 sounds, as in a primer: "mmm", not "em".</p>
+
+<p>And the celebration ran twice: at the end of a word two rainbows, two fanfares and an
+extra butterfly. The celebration timer was already ticking while the word was read out
+letter by letter and reached the fanfare, then the celebration started again after the
+reading. The bot never saw it: it counted collected words, not fanfares. Now it counts
+those too — one per word.</p>
 
 <p>The "child" was a bot again. One that flies straight at the right letter collects a
 short word in 3–6 seconds and a long one with two extras in 4–8. One that pushes in a
