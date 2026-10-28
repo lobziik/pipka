@@ -32,7 +32,8 @@ Levels: 1 — short words, letters left to right in reading order; 2 — the sam
 is MAMA (MOM in English). A balloon's letter comes from the physical key and the game's
 language, not the current keyboard layout.
 
-The voice is first of all recordings generated with Gemini TTS (`gemini-3.8-flash-tts`):
+The voice is off by default and switched on with the Voice button below the field (the
+choice is remembered). It is first of all recordings generated with Gemini TTS (`gemini-3.8-flash-tts`):
 identical on every machine, independent of the system. The dictionary is
 `letters/words.js` (words, alphabet and how each letter sounds: Russian ones as sounds,
 as in a primer, М is "mmm" and П a bare "p"; the hard and soft signs are named; English

@@ -183,7 +183,10 @@ var num=function(s,d){ var n=parseFloat(s); return isFinite(n)?n:d; };
 var sens=num(store('pipka.letters.sens'),num(store('pipka.ladybird.sens'),560));
 var muted=store('pipka.mute')==='1';
 var musicOn=store('pipka.letters.music')!=='0';
-var voiceOn=store('pipka.letters.voice')!=='0';
+/* Голос по умолчанию выключен: записи в новом формате ещё никто не слышал, а
+   системный голос на Linux — espeak, и с ним лучше тишина. Включается кнопкой
+   «Голос», выбор запоминается */
+var voiceOn=store('pipka.letters.voice')==='1';
 var wantFull=store('pipka.letters.full')!=='0';
 var level=Math.max(1,Math.min(4,num(store('pipka.letters.level'),1)|0));
 var nFriends=Math.min(8,num(store('pipka.letters.friends'),0)|0);
