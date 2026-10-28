@@ -23,9 +23,10 @@ into an analogue stick deflection of −1…+1.
 | `race/index.html` | **Pipka Circuit** — Monza-flavoured circuit, armco, sound |
 | `moon/index.html` | **Pipka Cosmonaut** — lunar landing: analogue throttle, fuel, contact lamp |
 | `danmaku/index.html` | **Pipka Danmaku** — almost Touhou: procedural waves, Cirno every ninth, generated music |
+| `ladybird/index.html` | **Pipka Ladybird** — for a three-year-old: a ladybird, buds that bloom into notes, balloons from every key |
 | `physics-test.js` | Car model run: `node physics-test.js` |
 
-No dependencies and no build step: four self-contained HTML files.
+No dependencies and no build step: five self-contained HTML files.
 
 ```sh
 setsid -f xdg-open index.html >/dev/null 2>&1   # or just open it in a browser
@@ -55,6 +56,10 @@ times tighter (0.85, 0.40 and 3°) and without the pad's score multiplier.
 **Pipka Danmaku** — the pipka is the ship's velocity (let go and you stop), the left
 button or `Shift` is focus (slower, hitbox shown), the right button or `X` is a bomb.
 Firing is automatic.
+
+**Pipka Ladybird** — the pipka flies the ladybird (let go and she lands), any key launches a
+balloon from where it sits on the keyboard, the buttons under the space bar make her laugh
+and the flowers sing. The game goes full screen; hold `Esc` to leave.
 
 ## Sensitivity
 
@@ -160,6 +165,32 @@ Checked by a bot in headless Chromium, not by ear: a bot that only shies away fr
 dies on waves 6–8, an immortal one reaches wave 27 at a peak of 830 bullets on screen. Under
 software rasterisation 2000 bullets cost 8.7 ms a frame.
 
+## Ladybird
+
+For a three-year-old, so there is no losing, no timer and no text on the field. A garden is
+six buds (four in the very first); touching one makes it bloom with a note of C major
+pentatonic, assigned left to right in rising order, so a sweep along the row plays a scale
+and no order of touching can sound wrong. When all are open there is a rainbow, a fanfare
+and a butterfly joins the ladybird for good (up to eight, kept in `localStorage`). Scenes
+cycle morning, day, evening, night; at night the buds are sleeping stars and the moon wakes
+when the last one is lit.
+
+The help is explicit and measured. Within 130 px a closed bud pulls the ladybird at up to
+190 px/s, less than her 280 px/s top speed, so she can always fly past; the last two buds
+pull from 1.5 times as far. After six seconds without input the nearest bud waves and
+chimes. The stick filter is τ = 120 ms, twice the danmaku's, and the default threshold is
+560 px/s, because a child's finger pushes hard and all at once.
+
+Every key is a balloon rising above that key's place on the keyboard, with a note fixed to
+the key. While playing, every key's default is suppressed (`F5` and `Tab` included), and in
+Chromium full screen `navigator.keyboard.lock()` keeps the browser's own shortcuts too; a
+short `Esc` is then a balloon and only holding it leaves. In Firefox `Esc` pauses at once.
+
+Checked by a bot in headless Chromium, not by a child: one that flies straight at the nearest
+bud clears a garden in 10–12 s including the six-second celebration; one that pushes in a
+random direction for 0.2–1 s and lets go 30% of the time takes 25–124 s, median about 60
+(before the stronger pull on the last two buds the tail reached 270 s).
+
 ## Sound
 
 Everything is synthesised in WebAudio, no samples: the engine is a sawtooth plus a
@@ -176,14 +207,14 @@ Per-game write-ups — what was asked, how the request turned into that game, wh
 nub's character dictated and what shipped broken — are on the site hub (`index.html`),
 in both languages. The short version:
 
-| | Pipka Pilot | Pipka Circuit | Pipka Cosmonaut | Pipka Danmaku |
-|---|---|---|---|---|
-| Wall clock | 14 min | 59 min, two versions | 52 min | ~20 min |
-| Tokens | ~76k | ~120k | ~55k | ~200k |
-| Code | 470 lines | 850 lines + 14 checks | 790 lines + 9 checks | 1300 lines |
-| Verified | syntax only | numerically | numerically, before publishing | by bot and timing, not by ear |
-| Shipped broken | overlays never hid | ice, endless spin | nothing | not known yet |
-| Model | Opus 5 (`claude-opus-5`) | Opus 5 | Opus 5 | Opus 5.5 (`claude-opus-5-5`) |
+| | Pipka Pilot | Pipka Circuit | Pipka Cosmonaut | Pipka Danmaku | Pipka Ladybird |
+|---|---|---|---|---|---|
+| Wall clock | 14 min | 59 min, two versions | 52 min | ~20 min | ~40 min |
+| Tokens | ~76k | ~120k | ~55k | ~200k | ~150k |
+| Code | 470 lines | 850 lines + 14 checks | 790 lines + 9 checks | 1300 lines | 1000 lines |
+| Verified | syntax only | numerically | numerically, before publishing | by bot and timing, not by ear | by bot and real input events, not by a child |
+| Shipped broken | overlays never hid | ice, endless spin | nothing | not known yet | pointer lock in full screen, the ladybird's spots |
+| Model | Opus 5 (`claude-opus-5`) | Opus 5 | Opus 5 | Opus 5.5 (`claude-opus-5-5`) | Opus 5.5 |
 
 The first two times what shipped broken was exactly what had not been measured. For the
 third the harness existed before the first publish and caught two discrepancies — a

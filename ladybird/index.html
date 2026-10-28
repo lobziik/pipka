@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Пипка-Коровка</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: шапка со счётом садов, поле во всю ширину, полоса настройки для взрослых снизу */
+:root{
+  --ink:#090b0f; --panel:#12161c; --carbon:#191e25; --line:#262f3a;
+  --fg:#d9e0e8; --dim:#78848f; --red:#e4322b; --amber:#f0b429; --green:#58d68d; --pink:#ff8fc0;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0; background:var(--ink); color:var(--fg); font-family:var(--sans);
+  display:flex; flex-direction:column; overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:10px 12px; gap:8px;
+}
+.hud{display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-family:var(--mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim)}
+.hud b{display:block; font-size:17px; font-weight:600; letter-spacing:.02em; color:var(--fg); font-variant-numeric:tabular-nums}
+.hud .brand{color:var(--red); font-weight:600; letter-spacing:.18em}
+#field{position:relative; flex:1 1 auto; min-height:0; border:1px solid var(--line); border-radius:3px; background:#bfe6ff; overflow:hidden}
+#field:fullscreen{border:0; border-radius:0}
+#field:fullscreen .stick{display:none}
+#cv{display:block}
+#field.play{cursor:none}
+.lockhint{position:absolute; top:10px; left:50%; transform:translateX(-50%); padding:5px 12px; border-radius:3px; background:rgba(10,13,18,.7); font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:#d9e0e8; pointer-events:none; white-space:nowrap}
+/* Индикатор пипки — для взрослого, который подбирает чувствительность */
+.stick{pointer-events:none; position:absolute; left:10px; bottom:10px; width:74px; padding:6px 6px 4px; background:rgba(10,13,18,.62); border:1px solid rgba(255,255,255,.12); border-radius:3px; font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:#aab4be; text-align:center}
+.stick .box{position:relative; width:60px; height:60px; margin:3px auto 4px; border:1px solid rgba(255,255,255,.15); background:
+  linear-gradient(to right,transparent 49%,rgba(255,255,255,.15) 49%,rgba(255,255,255,.15) 51%,transparent 51%),
+  linear-gradient(to bottom,transparent 49%,rgba(255,255,255,.15) 49%,rgba(255,255,255,.15) 51%,transparent 51%)}
+.stick .dot{position:absolute; left:50%; top:50%; width:11px; height:11px; margin:-5.5px 0 0 -5.5px; border-radius:50%; background:var(--red); box-shadow:0 0 9px rgba(228,50,43,.85)}
+.stick .rate{color:var(--amber)}
+/* Оверлеи */
+.ov{position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; text-align:center; background:rgba(5,7,12,.84); padding:20px; overflow:auto}
+.ov.soft{background:rgba(5,7,12,.45)}
+.ov h1{margin:0; font-family:var(--mono); font-size:clamp(22px,5.5vw,34px); font-weight:600; letter-spacing:.2em; text-transform:uppercase; text-wrap:balance}
+.ov h1 span{color:var(--red)}
+.ov h2{margin:0; font-family:var(--mono); font-size:clamp(18px,4.5vw,26px); font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:#fff}
+.ov p{margin:0; max-width:52ch; font-size:13.5px; line-height:1.65; color:#c3ccd5}
+.ov p b{color:var(--pink); font-weight:600}
+.ov ul{margin:0; padding:0; list-style:none; display:grid; gap:7px; font-family:var(--mono); font-size:12px; color:#c3ccd5; text-align:left}
+.ov ul b{color:var(--amber); font-weight:500}
+.btn{font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#fff; background:var(--red); border:0; border-radius:3px; padding:11px 22px; cursor:pointer}
+.btn:hover{background:#f2473f}
+.btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+.btn.big{font-size:16px; padding:16px 40px; border-radius:40px}
+.ghost{background:transparent; color:var(--dim); border:1px solid var(--line)}
+.ghost:hover{background:var(--carbon); color:var(--fg)}
+.bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+.bar input[type=range]{flex:1 1 150px; min-width:110px; accent-color:var(--red); height:18px}
+.bar .val{color:var(--amber); font-variant-numeric:tabular-nums; min-width:62px}
+.bar .tip{flex:1 1 100%; text-transform:none; letter-spacing:0; font-family:var(--sans); font-size:11.5px; color:#5f6a75}
+</style>
+</head>
+<body>
+<div class="hud">
+  <div class="brand" data-i18n="brand">Пипка-Коровка</div>
+  <div><span data-i18n="gardens">Садов</span><b id="hGardens">0</b></div>
+  <div><span data-i18n="friends">Друзей</span><b id="hFriends">0</b></div>
+</div>
+
+<div id="field">
+  <canvas id="cv"></canvas>
+  <div class="stick" aria-hidden="true">
+    <span data-i18n="nub">Пипка</span>
+    <div class="box"><div class="dot" id="dot"></div></div>
+    <div class="rate"><span id="rate">0</span> px/s</div>
+  </div>
+
+  <div class="lockhint" id="lockHint" data-i18n="lockHint" hidden></div>
+
+  <div class="ov" id="ovStart">
+    <h1 data-i18n-html="titleH">Пипка<span>-</span>Коровка</h1>
+    <p data-i18n-html="intro"></p>
+    <ul>
+      <li data-i18n-html="k1"></li>
+      <li data-i18n-html="k2"></li>
+      <li data-i18n-html="k3"></li>
+      <li data-i18n-html="k4"></li>
+    </ul>
+    <button class="btn big" id="btnStart" data-i18n="startBtn">Играть</button>
+    <p style="font-size:11.5px;color:#7a8590" data-i18n="note"></p>
+  </div>
+
+  <div class="ov soft" id="ovPause" hidden>
+    <h2 data-i18n="pauseH">Коровка ждёт</h2>
+    <p data-i18n="pauseP"></p>
+    <button class="btn big" id="btnResume" data-i18n="resume">Лететь</button>
+  </div>
+</div>
+
+<div class="bar">
+  <label for="sens" data-i18n="sensL">Чувствительность пипки</label>
+  <input type="range" id="sens" min="120" max="1600" step="20" value="560">
+  <span class="val" id="sensVal">560 px/s</span>
+  <button class="btn ghost" id="btnMute" type="button">Звук: вкл</button>
+  <button class="btn ghost" id="btnMusic" type="button">Музыка: вкл</button>
+  <button class="btn ghost" id="btnFull" type="button">Экран: весь</button>
+  <button class="btn ghost" id="btnLang" type="button">EN</button>
+  <a class="btn ghost" href="../index.html" data-i18n="allGames" style="text-decoration:none;display:inline-block">Все игры</a>
+  <span class="tip" id="tip" data-i18n="tip"></span>
+</div>
+
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d',{alpha:false});
+var field=document.getElementById('field');
+var el=function(id){return document.getElementById(id)};
+var ovStart=el('ovStart'), ovPause=el('ovPause');
+var dot=el('dot'), rateOut=el('rate');
+
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
+var num=function(s,d){ var n=parseFloat(s); return isFinite(n)?n:d; };
+
+/* Детский палец давит резко и до упора, а не дозирует, поэтому порог полного
+   отклонения выше, чем в остальных играх: взрослый тычок здесь — едва полёт */
+var sens=num(store('pipka.ladybird.sens'),560);
+var muted=store('pipka.mute')==='1';
+var musicOn=store('pipka.ladybird.music')!=='0';
+var wantFull=store('pipka.ladybird.full')!=='0';
+var gardens=num(store('pipka.ladybird.gardens'),0)|0;
+var nFriends=Math.min(8,num(store('pipka.ladybird.friends'),0)|0);
+
+/* ======================= ЯЗЫК ======================= */
+var TXT={
+ru:{brand:'Пипка-Коровка', titleH:'Пипка<span>-</span>Коровка',
+ gardens:'Садов', friends:'Друзей', nub:'Пипка',
+ intro:'Игра для тех, кому три. Божья коровка красная и круглая, как сама <b>пипка</b>: давишь — летит, отпустил — садится и складывает крылья. Бутоны распускаются, если до них долететь, и у каждого цветка своя нота. Проиграть нельзя, торопиться некуда, читать не нужно.',
+ k1:'<b>пипка</b> — полёт; возле бутона коровку чуть-чуть тянет к нему',
+ k2:'<b>любая клавиша</b> — воздушный шарик, его можно лопнуть',
+ k3:'<b>кнопки под пробелом</b> — коровка смеётся, цветы поют',
+ k4:'<b>взрослым</b>: игра идёт на весь экран, выйти — подержать <b>Esc</b>',
+ startBtn:'Играть',
+ note:'На весь экран Chromium отдаёт игре всю клавиатуру, и удары ладошкой по клавишам не закроют вкладку. В Firefox так нельзя: там Esc сразу ставит паузу.',
+ lockHint:'Курсор не пойман — щёлкни по полю',
+ pauseH:'Коровка ждёт', pauseP:'Нажми куда-нибудь — и полетим дальше.', resume:'Лететь',
+ sensL:'Чувствительность пипки', allGames:'Все игры',
+ tip:'Если коровка носится от лёгкого касания — тащи ползунок вправо, если еле ползёт под детским пальцем — влево. Сначала попробуй сам, потом дай ребёнку.',
+ snd:'Звук', mus:'Музыка', scr:'Экран', scrF:'весь', scrW:'окно', on:'вкл', off:'выкл'},
+en:{brand:'Pipka Ladybird', titleH:'Pipka<span>-</span>Ladybird',
+ gardens:'Gardens', friends:'Friends', nub:'Pipka',
+ intro:'A game for three-year-olds. The ladybird is red and round, like the <b>pipka</b> itself: push and she flies, let go and she lands and folds her wings. Buds bloom when she reaches them, and every flower has its own note. You cannot lose, there is no hurry, and nothing needs reading.',
+ k1:'<b>pipka</b> — flight; near a bud the ladybird is drawn to it, a little',
+ k2:'<b>any key</b> — a balloon, which can be popped',
+ k3:'<b>buttons under the space bar</b> — the ladybird laughs, the flowers sing',
+ k4:'<b>for grown-ups</b>: the game goes full screen, hold <b>Esc</b> to leave',
+ startBtn:'Play',
+ note:'In full screen Chromium hands the whole keyboard to the game, so a palm on the keys will not close the tab. Firefox cannot do that: there Esc pauses at once.',
+ lockHint:'Pointer not captured — click the field',
+ pauseH:'The ladybird is waiting', pauseP:'Click anywhere and off we fly again.', resume:'Fly',
+ sensL:'Pipka sensitivity', allGames:'All games',
+ tip:'If the ladybird bolts at a light touch, drag the slider right; if she barely crawls under a child\'s finger, drag it left. Try it yourself first, then hand it over.',
+ snd:'Sound', mus:'Music', scr:'Screen', scrF:'full', scrW:'window', on:'on', off:'off'}};
+var LANG=store('pipka.lang')||(((navigator.language||'ru').slice(0,2)==='ru')?'ru':'en');
+function t(k){ var d=TXT[LANG]||TXT.ru; return d[k]!==undefined?d[k]:(TXT.ru[k]!==undefined?TXT.ru[k]:k); }
+function applyLang(){
+  document.documentElement.lang=LANG;
+  var i, els=document.querySelectorAll('[data-i18n]');
+  for(i=0;i<els.length;i++) els[i].textContent=t(els[i].getAttribute('data-i18n'));
+  els=document.querySelectorAll('[data-i18n-html]');
+  for(i=0;i<els.length;i++) els[i].innerHTML=t(els[i].getAttribute('data-i18n-html'));
+  els=document.querySelectorAll('[data-i18n-title]');
+  for(i=0;i<els.length;i++) els[i].title=t(els[i].getAttribute('data-i18n-title'));
+  var lb=el('btnLang'); if(lb) lb.textContent=(LANG==='ru'?'EN':'RU');
+  drawButtons(); hud(1);
+}
+
+/* ======================= ПОЛЕ ======================= */
+/* Высота поля в логике — 540 px, ширина берётся из окна. Скорость коровки задана
+   в этих пикселях, поэтому на любом экране поле пересекается за одно и то же время */
+var LH=540, LW=960, W=600, H=400, DPR=1, SC=1, OX=0, OY=0;
+function resize(){
+  var r=field.getBoundingClientRect();
+  W=Math.max(260,Math.round(r.width)); H=Math.max(220,Math.round(r.height));
+  DPR=Math.min(1.5, window.devicePixelRatio||1);
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  var old=LW;
+  SC=H/LH; LW=W/SC; OX=0; OY=0;
+  if(LW<720){ LW=720; SC=W/LW; OY=(H-LH*SC)/2; }
+  if(Math.abs(old-LW)>0.5) rescaleX(LW/old);
+  BG=bakeBg(G.scene,G.round); BGP=null; G.fade=0;
+}
+window.addEventListener('resize',function(){ resize(); if(G.phase!=='fly') paint(); });
+document.addEventListener('fullscreenchange',function(){
+  setTimeout(function(){ resize(); if(G.phase!=='fly') paint(); },60);
+  /* взрослый подержал Esc и вышел из полного экрана — это и есть «стоп» */
+  if(!document.fullscreenElement && G.phase==='fly' && G.wasFull) pause();
+  else if(document.fullscreenElement && G.phase==='fly' && !document.pointerLockElement) lockPointer();
+  G.wasFull=!!document.fullscreenElement;
+});
+
+/* ======================= СЦЕНЫ ======================= */
+/* Утро, день, вечер, ночь — по кругу. Ночью вместо бутонов спящие звёзды */
+var SCN=[
+ {sky:['#ffc9df','#ffe9cf'], far:'#a6e39a', near:'#84d474', grass:['#7acb68','#5fb552'], body:'sun', sunY:150, sunC:'#ffe27a', ray:'#ffd0a0', cloud:'#ffffff', tgt:'flower'},
+ {sky:['#7ccbff','#d6f0ff'], far:'#8fdc7e', near:'#6cca5c', grass:['#62c052','#4aa840'], body:'sun', sunY:92, sunC:'#ffe04d', ray:'#ffcf3a', cloud:'#ffffff', tgt:'flower'},
+ {sky:['#b98bd8','#ffb07a'], far:'#9fb86a', near:'#7fa356', grass:['#6f9a4c','#557d3b'], body:'sun', sunY:170, sunC:'#ffad5c', ray:'#ff8e6b', cloud:'#ffc4b8', tgt:'flower'},
+ {sky:['#141a46','#3a3f82'], far:'#2c4a52', near:'#233d45', grass:['#1f3a3c','#15292c'], body:'moon', sunY:96, sunC:'#fff4c4', ray:'#fff4c4', cloud:null, tgt:'star'}];
+var PAL=['#ff6fa8','#ffb03b','#b77cff','#5fb8ff','#ff5e5e','#ffe14d','#ff8ad8','#7be0d0'];
+var BG=null, BGP=null;
+function rng(seed){ var a=seed>>>0; return function(){ a=(a+0x6D2B79F5)>>>0; var x=a; x=Math.imul(x^(x>>>15),x|1); x^=x+Math.imul(x^(x>>>7),x|61); return ((x^(x>>>14))>>>0)/4294967296; }; }
+function hillY(x,base,amp,a,b){ return base+Math.sin(x*0.006+a)*amp+Math.sin(x*0.015+b)*amp*0.4; }
+function bakeBg(si,round){
+  var s=SCN[si], c=document.createElement('canvas'); c.width=cv.width; c.height=cv.height;
+  var g=c.getContext('2d'), R=rng(round*977+si*31+5), k=DPR*SC;
+  g.fillStyle=s.sky[0]; g.fillRect(0,0,c.width,c.height);
+  g.setTransform(k,0,0,k,DPR*OX,DPR*OY);
+  var gr=g.createLinearGradient(0,0,0,LH*0.62);
+  gr.addColorStop(0,s.sky[0]); gr.addColorStop(1,s.sky[1]);
+  g.fillStyle=gr; g.fillRect(-10,-LH,LW+20,LH*2);
+  if(s.tgt==='star') for(var i=0;i<110;i++){
+    g.fillStyle='rgba(255,255,240,'+(0.25+R()*0.6).toFixed(2)+')';
+    g.beginPath(); g.arc(R()*LW,R()*LH*0.55,0.6+R()*1.3,0,7); g.fill();
+  }
+  var a1=R()*6, b1=R()*6, a2=R()*6, b2=R()*6, x;
+  g.fillStyle=s.far; g.beginPath(); g.moveTo(-10,LH+10);
+  for(x=-10;x<=LW+10;x+=8) g.lineTo(x,hillY(x,LH*0.45,24,a1,b1));
+  g.lineTo(LW+10,LH+10); g.fill();
+  gr=g.createLinearGradient(0,LH*0.5,0,LH);
+  gr.addColorStop(0,s.grass[0]); gr.addColorStop(1,s.grass[1]);
+  g.fillStyle=s.near; g.beginPath(); g.moveTo(-10,LH+10);
+  for(x=-10;x<=LW+10;x+=8) g.lineTo(x,hillY(x,LH*0.56,18,a2,b2));
+  g.lineTo(LW+10,LH+10); g.fill();
+  g.fillStyle=gr; g.beginPath(); g.moveTo(-10,LH+10);
+  for(x=-10;x<=LW+10;x+=8) g.lineTo(x,hillY(x,LH*0.56,18,a2,b2)+10);
+  g.lineTo(LW+10,LH+10); g.fill();
+  /* травинки и мелкие цветочки — фон, не цели; мелкие и тусклые, чтобы ребёнок не путал */
+  g.lineCap='round';
+  for(i=0;i<90;i++){
+    x=R()*LW; var y=LH*0.62+R()*LH*0.38;
+    g.strokeStyle='rgba(30,80,30,'+(s.tgt==='star'?0.35:0.28)+')'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(x-4,y-7); g.lineTo(x,y); g.lineTo(x+4,y-8); g.moveTo(x,y); g.lineTo(x+1,y-10); g.stroke();
+  }
+  if(s.tgt!=='star') for(i=0;i<40;i++){
+    x=R()*LW; y=LH*0.6+R()*LH*0.4;
+    g.fillStyle='rgba(255,255,255,.55)'; g.beginPath(); g.arc(x,y,2.2,0,7); g.fill();
+    g.fillStyle='rgba(255,220,80,.7)'; g.beginPath(); g.arc(x,y,1,0,7); g.fill();
+  }
+  return c;
+}
+
+/* ======================= ЗВУК ======================= */
+var AC=null, master=null, sfx=null, mus=null, noiseBuf=null, lastS={};
+function initAudio(){
+  if(AC) return;
+  try{
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    /* общий уровень ниже, чем в остальных играх: уши ближе к динамику и меньше */
+    master=AC.createGain(); master.gain.value=muted?0:0.7; master.connect(AC.destination);
+    var comp=AC.createDynamicsCompressor(); comp.threshold.value=-18; comp.ratio.value=6;
+    comp.connect(master);
+    sfx=AC.createGain(); sfx.gain.value=0.9; sfx.connect(comp);
+    mus=AC.createGain(); mus.gain.value=musicOn?0.5:0; mus.connect(comp);
+    noiseBuf=AC.createBuffer(1,Math.floor(AC.sampleRate*1.0),AC.sampleRate);
+    var ch=noiseBuf.getChannelData(0);
+    for(var i=0;i<ch.length;i++) ch[i]=Math.random()*2-1;
+  }catch(e){ AC=null; }
+}
+function at(node,val,tau){ try{ node.setTargetAtTime(val,AC.currentTime,tau); }catch(e){} }
+function gate(name,gap){
+  if(!AC||!sfx) return false;
+  var n=AC.currentTime; if(lastS[name]!==undefined && n-lastS[name]<gap) return false;
+  lastS[name]=n; return true;
+}
+function mf(m){ return 440*Math.pow(2,(m-69)/12); }
+function tone(f0,f1,d,type,vol,dest,when,att){
+  try{
+    var o=AC.createOscillator(), g=AC.createGain(), tt=when||AC.currentTime;
+    o.type=type; o.frequency.setValueAtTime(f0,tt);
+    if(f1!==f0) o.frequency.exponentialRampToValueAtTime(f1,tt+d);
+    g.gain.setValueAtTime(0.0001,tt);
+    g.gain.linearRampToValueAtTime(vol,tt+(att||0.006));
+    g.gain.exponentialRampToValueAtTime(0.0001,tt+d);
+    o.connect(g); g.connect(dest||sfx); o.start(tt); o.stop(tt+d+0.02);
+  }catch(e){}
+}
+function noise(d,ftype,f0,f1,vol,dest,when,q){
+  try{
+    var tt=when||AC.currentTime, s=AC.createBufferSource(); s.buffer=noiseBuf; s.loop=true;
+    var f=AC.createBiquadFilter(); f.type=ftype; f.frequency.setValueAtTime(f0,tt); if(q) f.Q.value=q;
+    if(f1!==f0) f.frequency.exponentialRampToValueAtTime(f1,tt+d);
+    var g=AC.createGain(); g.gain.setValueAtTime(vol,tt); g.gain.exponentialRampToValueAtTime(0.0001,tt+d);
+    s.connect(f); f.connect(g); g.connect(dest||sfx);
+    s.start(tt, Math.random()*0.5); s.stop(tt+d+0.02);
+  }catch(e){}
+}
+/* Колокольчик музыкальной шкатулки: основной тон и две быстро гаснущие обертоны.
+   Третья взята чуть выше 3f — так он звенит металлом, а не органом */
+function bell(m,vol,when,dest,dur){
+  var f=mf(m), d=dur||1.1;
+  tone(f,f,d,'sine',vol,dest,when);
+  tone(f*2,f*2,d*0.45,'sine',vol*0.28,dest,when);
+  tone(f*3.02,f*3.02,d*0.2,'sine',vol*0.12,dest,when);
+}
+var snd={
+  bloom:function(m){ if(!AC) return; var n=AC.currentTime;
+    bell(m,0.2,n); bell(m+12,0.05,n+0.09,null,0.5); bell(m+19,0.04,n+0.16,null,0.4); },
+  ring:function(m){ if(gate('ring'+m,0.15)) bell(m,0.14,AC.currentTime,null,0.8); },
+  pop:function(m){ if(!AC) return; noise(0.07,'bandpass',1800,700,0.35,null,null,1.2);
+    tone(700,220,0.09,'triangle',0.12); bell(m,0.08,AC.currentTime+0.04,null,0.5); },
+  balloon:function(m){ if(gate('bal',0.05)) tone(mf(m-12),mf(m),0.28,'triangle',0.09,null,null,0.03); },
+  giggle:function(){ if(!gate('gig',0.35)) return; var n=AC.currentTime;
+    [0,1,2,3,4].forEach(function(i){ var f=880+i*90+(i%2)*220; tone(f,f*1.15,0.07,'triangle',0.08,null,n+i*0.07); }); },
+  hint:function(m){ if(!AC) return; var n=AC.currentTime; bell(m,0.06,n,null,0.5); bell(m,0.05,n+0.22,null,0.5); },
+  fanfare:function(star){ if(!AC) return; var n=AC.currentTime, o=star?12:0;
+    [72,76,79,84,79,84,88].forEach(function(m,i){ bell(m+o-12,0.13,n+i*0.13,null,i===6?1.6:0.7); });
+    for(var i=0;i<10;i++) bell(96+[0,2,4,7,9][i%5],0.02,n+1.0+i*0.06,null,0.3); },
+  friend:function(){ if(!AC) return; var n=AC.currentTime;
+    [79,84,91].forEach(function(m,i){ bell(m,0.07,n+i*0.1,null,0.6); }); },
+  whoosh:function(){ if(AC) noise(0.9,'bandpass',400,2400,0.06,null,null,0.7); }
+};
+
+/* ---------- Колыбельная ---------- */
+/* Генерируется, а не хранится: аккорды I–vi–IV–V, мелодия — случайное блуждание по
+   мажорной пентатонике. В пентатонике нет полутонов, поэтому ни одна случайная нота
+   не диссонирует резко; сильные доли всё равно притянуты к звукам аккорда */
+var CHORDS=[{r:[48,52,55],pc:[0,4,7]},{r:[45,48,52],pc:[9,0,4]},{r:[41,45,48],pc:[9,0,5]},{r:[43,47,50],pc:[7,2,11]}];
+var POOL=[67,69,72,74,76,79,81];
+var song=null, mStep=0, mNext=0, SPB=60/76/2;
+function makeSong(seed){
+  var R=rng(seed*7919+13), mel=new Array(32), idx=2+Math.floor(R()*3), prev=-1, i;
+  for(i=0;i<32;i++) mel[i]=0;
+  /* мотив на два такта; на сильную долю — ближайший звук аккорда, но не тот же,
+     что только что звучал: иначе притяжение к аккорду залипает на одной ноте */
+  for(var st=0;st<16;st+=2){
+    var mv=[-2,-1,-1,1,1,2][Math.floor(R()*6)];
+    idx=Math.max(0,Math.min(POOL.length-1,idx+mv));
+    if(st%8===0){
+      var pc=CHORDS[Math.floor(st/8)].pc, bestI=idx, bd=99;
+      for(i=0;i<POOL.length;i++) if(pc.indexOf(POOL[i]%12)>=0 && i!==prev && Math.abs(i-idx)<bd){ bd=Math.abs(i-idx); bestI=i; }
+      idx=bestI;
+    }
+    if(idx===prev && R()<0.7) idx=Math.max(0,Math.min(POOL.length-1,idx+(R()<0.5?-1:1)));
+    if(st%4===0 || R()<0.75){ mel[st]=POOL[idx]; prev=idx; }
+    if(st%4===2 && R()<0.3) mel[st+1]=POOL[Math.max(0,Math.min(POOL.length-1,idx+(R()<0.5?-1:1)))];
+  }
+  for(i=0;i<16;i++) mel[16+i]=mel[i];
+  /* над IV в пентатонике нет фа, поэтому третий такт проверяется отдельно:
+     ре, ми и соль там ложатся секундой против фа и до */
+  for(i=16;i<24;i++){ var p=mel[i]%12; if(mel[i]&&[9,0].indexOf(p)<0) mel[i]=(p===2||p===4)?72:69; }
+  /* последний такт — над доминантой, полукаденция; разрешение в тонику на повторе */
+  for(i=24;i<32;i++) mel[i]=0;
+  mel[24]=(R()<0.5)?74:79; mel[26]=76; mel[28]=74; mel[30]=(R()<0.5)?67:79;
+  return {mel:mel};
+}
+function musicTick(){
+  if(!AC||!song||!musicOn) return;
+  var now=AC.currentTime;
+  if(mNext<now) mNext=now+0.05;
+  while(mNext<now+0.25){ playStep(mStep,mNext); mStep=(mStep+1)%32; mNext+=SPB; }
+}
+function playStep(st,tt){
+  var ch=CHORDS[Math.floor(st/8)].r;
+  /* аккомпанемент — тихие восьмые треугольником: бас на сильную, дальше перебор */
+  var an=[ch[0]-12,ch[2],ch[1],ch[2],ch[0],ch[2],ch[1],ch[2]][st%8];
+  tone(mf(an),mf(an),SPB*1.6,'triangle',st%8===0?0.05:0.025,mus,tt,0.01);
+  if(song.mel[st]) bell(song.mel[st],0.06,tt,mus,1.2);
+}
+
+/* ======================= ВВОД ======================= */
+var stick={x:0,y:0,rate:0};
+var accX=0, accY=0, keys={}, botStick=null;
+document.addEventListener('mousemove',function(e){
+  if(G.phase!=='fly') return;
+  accX+=e.movementX||0; accY+=e.movementY||0;
+},{passive:true});
+document.addEventListener('mousedown',function(e){
+  if(G.phase!=='fly') return;
+  if(!document.pointerLockElement) lockPointer();
+  if(e.button===0||e.button===2){ giggle(); }
+  if(e.button!==0) e.preventDefault();
+});
+cv.addEventListener('contextmenu',function(e){ e.preventDefault(); });
+field.addEventListener('wheel',function(e){ e.preventDefault(); },{passive:false});
+/* Раскладка ЙЦУКЕН/QWERTY по физическим кодам: шарик вылетает над той клавишей,
+   по которой стукнули, и одна и та же клавиша всегда звучит одной нотой */
+var ROWS=['Backquote Digit1 Digit2 Digit3 Digit4 Digit5 Digit6 Digit7 Digit8 Digit9 Digit0 Minus Equal',
+  'KeyQ KeyW KeyE KeyR KeyT KeyY KeyU KeyI KeyO KeyP BracketLeft BracketRight',
+  'KeyA KeyS KeyD KeyF KeyG KeyH KeyJ KeyK KeyL Semicolon Quote',
+  'KeyZ KeyX KeyC KeyV KeyB KeyN KeyM Comma Period Slash'].map(function(s){return s.split(' ');});
+var KNOTES=[60,62,64,67,69,72,74,76,79,81,84,86,88];
+function keyPlace(code){
+  for(var r=0;r<ROWS.length;r++){ var i=ROWS[r].indexOf(code);
+    if(i>=0) return {fx:(i+0.5+r*0.4)/13.6, note:KNOTES[Math.min(12,i)]+(r>=2?-12:0)}; }
+  var h=0; for(var j=0;j<code.length;j++) h=(h*31+code.charCodeAt(j))>>>0;
+  return {fx:0.1+(h%80)/100, note:KNOTES[h%10]};
+}
+window.addEventListener('keydown',function(e){
+  var k=e.key, c=e.code;
+  if(G.phase!=='fly'){
+    if((k===' '||k==='Enter')&&G.phase!=='fly'){ e.preventDefault(); if(G.phase==='pause') resume(); else start(); }
+    return;
+  }
+  /* во время игры клавиатура целиком принадлежит ребёнку: ни одна клавиша не
+     прокручивает, не перезагружает и не уводит со страницы */
+  e.preventDefault();
+  if(!document.pointerLockElement) lockPointer();
+  if(k==='ArrowLeft'){keys.l=1;return} if(k==='ArrowRight'){keys.r=1;return}
+  if(k==='ArrowUp'){keys.u=1;return}   if(k==='ArrowDown'){keys.d=1;return}
+  if(k==='Escape'&&!document.fullscreenElement){ pause(); return; }
+  if(e.repeat) return;
+  G.idle=0; balloon(keyPlace(c||k));
+});
+window.addEventListener('keyup',function(e){
+  var k=e.key;
+  if(k==='ArrowLeft')keys.l=0; else if(k==='ArrowRight')keys.r=0;
+  else if(k==='ArrowUp')keys.u=0; else if(k==='ArrowDown')keys.d=0;
+});
+/* τ = 120 мс — вдвое длиннее, чем в данмаку: детский нажим дёрганый, и фильтр
+   превращает тычки в плавный полёт, а не в рывки */
+function readStick(dt){
+  var rx=accX/dt, ry=accY/dt; accX=0; accY=0;
+  stick.rate=Math.round(Math.sqrt(rx*rx+ry*ry));
+  var tx=Math.max(-1,Math.min(1,rx/sens)), ty=Math.max(-1,Math.min(1,ry/sens));
+  if(keys.l||keys.r) tx=(keys.r?1:0)-(keys.l?1:0);
+  if(keys.u||keys.d) ty=(keys.d?1:0)-(keys.u?1:0);
+  if(botStick){ tx=botStick.x; ty=botStick.y; }
+  var m=Math.sqrt(tx*tx+ty*ty); if(m>1){ tx/=m; ty/=m; }
+  var a=1-Math.exp(-dt/0.12);
+  stick.x+=(tx-stick.x)*a; stick.y+=(ty-stick.y)*a;
+}
+
+/* ======================= СОСТОЯНИЕ ======================= */
+/* Скорость 280 px/s: поле шириной 960 пересекается за три с половиной секунды —
+   быстро настолько, чтобы было весело, и медленно настолько, чтобы успеть отпустить */
+/* Коровка — 28 px при высоте поля 540, примерно палец ребёнка на экране ноутбука */
+var BUG_R=28, VMAX=280, FL_R=34, MAG=130, MAGV=150, TOUCH=BUG_R+FL_R+10;
+var G={phase:'start', t:0, scene:0, round:0, cel:-1, fade:0, idle:0, wasFull:false, locked:false, lockT:0};
+var bug={x:480,y:300,vx:0,vy:0,open:0,flap:0,blink:0,face:1,laugh:0};
+var targets=[], balloons=[], parts=[], friends=[], clouds=[], flies=[];
+var PCAP=450;
+
+function rescaleX(f){
+  var i, all=[targets,balloons,friends,clouds,flies];
+  bug.x*=f;
+  for(var a=0;a<all.length;a++) for(i=0;i<all[a].length;i++) all[a][i].x*=f;
+}
+function makeTargets(){
+  var s=SCN[G.scene], R=rng(G.round*131+G.scene*17+3);
+  /* первый сад короче: первая награда должна прийти, пока не надоело */
+  var n=(gardens===0&&G.round===0&&G.scene===0)?4:6, pts=[], md=150, tries=0;
+  var y0=s.tgt==='star'?60:LH*0.58, y1=s.tgt==='star'?LH*0.5:LH-82;
+  while(pts.length<n && tries<4000){
+    tries++; if(tries%600===0) md*=0.85;
+    var x=70+R()*(LW-140), y=y0+R()*(y1-y0), ok=true;
+    if(s.body&&Math.hypot(x-(LW-110),y-s.sunY)<120) ok=false;
+    if(Math.hypot(x-bug.x,y-bug.y)<140) ok=false;
+    if(x<150&&y>LH-160) ok=false;            // угол индикатора пипки
+    for(var j=0;j<pts.length&&ok;j++) if(Math.hypot(x-pts[j].x,y-pts[j].y)<md) ok=false;
+    if(ok) pts.push({x:x,y:y});
+  }
+  /* ноты раздаются слева направо по возрастанию — пролёт вдоль ряда играет гамму */
+  pts.sort(function(a,b){return a.x-b.x;});
+  var base=s.tgt==='star'?72:60, sc=[0,2,4,7,9,12,14];
+  targets=pts.map(function(p,i){
+    return {x:p.x,y:p.y,kind:s.tgt,col:PAL[Math.floor(R()*PAL.length)],note:base+sc[i%7],
+      open:false,b:0,bt:0,ph:R()*6,spin:R()*6,pet:5+Math.floor(R()*3),bounce:0,inside:false,blink:0,wig:0};
+  });
+  clouds=[]; if(s.cloud) for(var c=0;c<4;c++) clouds.push({x:R()*LW,y:40+R()*120,s:0.7+R()*0.6,v:6+R()*8});
+  flies=[]; if(s.tgt==='star') for(var f=0;f<14;f++) flies.push({x:R()*LW,y:LH*0.55+R()*LH*0.4,ph:R()*6,v:0.5+R()*0.8});
+  song=makeSong(G.round*4+G.scene+gardens); mStep=0;
+}
+function mkFriend(x,y){ return {x:x,y:y,col:PAL[(friends.length*3+1)%PAL.length],ph:Math.random()*6}; }
+function reset(){
+  bug.x=LW/2; bug.y=LH*0.42; bug.vx=bug.vy=0; bug.open=0;
+  G.cel=-1; G.idle=0; G.fade=0; balloons=[]; parts=[];
+  friends=[]; for(var i=0;i<nFriends;i++) friends.push(mkFriend(bug.x-40-i*30,bug.y+10));
+  makeTargets();
+}
+
+/* ======================= ЧАСТИЦЫ ======================= */
+function burst(x,y,n,cols,kind,spd){
+  for(var i=0;i<n&&parts.length<PCAP;i++){
+    var a=Math.random()*Math.PI*2, v=(spd||120)*(0.4+Math.random()*0.8);
+    parts.push({x:x,y:y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-30,life:0,max:0.8+Math.random()*0.7,
+      col:cols[Math.floor(Math.random()*cols.length)],s:3+Math.random()*4,kind:kind||'spark',rot:Math.random()*6,vr:(Math.random()-0.5)*6});
+  }
+}
+
+/* ======================= ДЕЙСТВИЯ ======================= */
+function balloon(p){
+  if(balloons.length>=12) return;
+  var col=PAL[Math.floor(p.fx*PAL.length*2.7)%PAL.length];
+  balloons.push({x:30+p.fx*(LW-60),y:LH+40,vy:-(48+Math.random()*20),col:col,ph:Math.random()*6,note:p.note,born:G.t});
+  snd.balloon(p.note);
+}
+function giggle(){
+  G.idle=0; bug.laugh=0.8;
+  for(var i=0;i<4&&parts.length<PCAP;i++)
+    parts.push({x:bug.x+(Math.random()-0.5)*30,y:bug.y-30,vx:(Math.random()-0.5)*40,vy:-60-Math.random()*40,life:0,max:1.3,col:'#ff5c8a',s:9+Math.random()*5,kind:'heart',rot:0,vr:0});
+  snd.giggle();
+  var n=0;
+  for(var j=0;j<targets.length;j++) if(targets[j].open){
+    targets[j].bounce=1;
+    if(AC) bell(targets[j].note,0.05,AC.currentTime+0.25+n*0.09,null,0.6);
+    n++;
+  }
+}
+function openTarget(f){
+  f.open=true; f.bt=0; f.bounce=1;
+  snd.bloom(f.note);
+  burst(f.x,f.y,22,f.kind==='star'?['#fff6b0','#ffe066','#ffffff']:[f.col,'#ffffff','#ffe066'],'spark',150);
+  var left=0; for(var i=0;i<targets.length;i++) if(!targets[i].open) left++;
+  /* полсекунды тишины перед фанфарой, чтобы последняя нота успела прозвучать */
+  if(!left) G.cel=-0.6;
+}
+
+/* ======================= ШАГ ======================= */
+function step(dt){
+  G.t+=dt;
+  var celebrating=G.cel>-1;
+  /* --- полёт --- */
+  var tvx=stick.x*VMAX, tvy=stick.y*VMAX;
+  var sm=Math.sqrt(stick.x*stick.x+stick.y*stick.y);
+  if(sm>0.08) G.idle=0; else G.idle+=dt;
+  /* Ближний бутон тянет к себе. Тяга слабее полного отклонения почти вдвое, поэтому
+     пролететь мимо можно всегда, а остановиться рядом — значит долететь */
+  /* Последние два бутона тянут в полтора раза дальше: бот со случайными тычками
+     вместо пальца искал последний цветок до четырёх минут, а с этим — см. README */
+  var near=null, nd=1e9, left=0, i, f;
+  for(i=0;i<targets.length;i++){ f=targets[i]; if(f.open) continue; left++;
+    var d=Math.hypot(f.x-bug.x,f.y-bug.y); if(d<nd){ nd=d; near=f; } }
+  var mag=left<=2?MAG*1.5:MAG;
+  if(near && nd<mag && nd>1){
+    var pull=MAGV*(1-nd/mag)+40;
+    tvx+=(near.x-bug.x)/nd*pull; tvy+=(near.y-bug.y)/nd*pull;
+  }
+  var a=1-Math.exp(-dt/0.25);
+  bug.vx+=(tvx-bug.vx)*a; bug.vy+=(tvy-bug.vy)*a;
+  bug.x+=bug.vx*dt; bug.y+=bug.vy*dt;
+  /* края мягкие: коровка не улетает за экран, а отскакивает, как от стекла */
+  var mx=BUG_R+6, top=BUG_R+30, bot=LH-BUG_R-6;
+  if(bug.x<mx){ bug.x=mx; bug.vx=Math.abs(bug.vx)*0.4; }
+  if(bug.x>LW-mx){ bug.x=LW-mx; bug.vx=-Math.abs(bug.vx)*0.4; }
+  if(bug.y<top){ bug.y=top; bug.vy=Math.abs(bug.vy)*0.4; }
+  if(bug.y>bot){ bug.y=bot; bug.vy=-Math.abs(bug.vy)*0.4; }
+  var sp=Math.hypot(bug.vx,bug.vy);
+  var flying=sp>14||sm>0.08;
+  bug.open+=((flying?1:0)-bug.open)*(1-Math.exp(-dt/0.12));
+  bug.flap+=dt*(18+sp*0.06);
+  if(sp>4) bug.face=bug.vx<0?-1:1;
+  bug.blink-=dt; if(bug.blink<-3.2-Math.random()*2) bug.blink=0.14;
+  bug.laugh=Math.max(0,bug.laugh-dt);
+  if(sp>60 && Math.random()<dt*14 && parts.length<PCAP)
+    parts.push({x:bug.x-bug.vx*0.06,y:bug.y-bug.vy*0.06+6,vx:(Math.random()-0.5)*20,vy:(Math.random()-0.5)*20,life:0,max:0.6,col:'#fff7c0',s:2+Math.random()*2,kind:'spark',rot:0,vr:0});
+
+  /* --- цели --- */
+  for(i=0;i<targets.length;i++){ f=targets[i];
+    var dd=Math.hypot(f.x-bug.x,f.y-bug.y), inside=dd<TOUCH;
+    if(inside && !f.inside){ if(!f.open) openTarget(f); else { snd.ring(f.note); f.bounce=1; } }
+    f.inside=inside;
+    if(f.open) f.bt=Math.min(1,f.bt+dt/0.7);
+    f.bounce=Math.max(0,f.bounce-dt*1.6); f.wig=Math.max(0,f.wig-dt*0.9);
+    f.spin+=dt*(f.open?0.35:0); f.blink-=dt; if(f.blink<-2.5-((f.ph*7)%3)) f.blink=0.15;
+  }
+  /* подсказка: если пипку не трогают шесть секунд, ближайший бутон машет и звенит */
+  if(!celebrating && G.idle>6){
+    G.idle=2.5; var h=null, hd=1e9;
+    for(i=0;i<targets.length;i++) if(!targets[i].open){ var q=Math.hypot(targets[i].x-bug.x,targets[i].y-bug.y); if(q<hd){hd=q;h=targets[i];} }
+    if(h){ h.wig=1; snd.hint(h.note); }
+  }
+  /* --- шарики --- */
+  for(i=balloons.length-1;i>=0;i--){ var b=balloons[i];
+    b.y+=b.vy*dt; b.x+=Math.sin(G.t*1.4+b.ph)*12*dt;
+    if(Math.hypot(b.x-bug.x,b.y-bug.y)<BUG_R+26){
+      snd.pop(b.note); burst(b.x,b.y,18,[b.col,'#ffffff'],'conf',170);
+      balloons.splice(i,1); continue;
+    }
+    if(b.y<-90) balloons.splice(i,1);
+  }
+  /* --- друзья: каждая бабочка следует за предыдущей, первая — за коровкой --- */
+  for(i=0;i<friends.length;i++){ var fr=friends[i], lead=i?friends[i-1]:bug;
+    var tx=lead.x-(i?0:bug.face*34)+Math.sin(G.t*1.7+fr.ph)*14, ty=lead.y+12+Math.cos(G.t*2.1+fr.ph)*10;
+    var dx=tx-fr.x, dy=ty-fr.y, dl=Math.hypot(dx,dy), keep=i?30:0;
+    if(dl>keep){ var k=(1-Math.exp(-dt/0.32)); fr.x+=dx*(1-keep/dl)*k; fr.y+=dy*(1-keep/dl)*k; }
+  }
+  /* --- праздник --- */
+  if(celebrating){
+    var pc=G.cel; G.cel+=dt;
+    if(pc<0&&G.cel>=0){ snd.fanfare(SCN[G.scene].tgt==='star'); gardens++; store('pipka.ladybird.gardens',gardens);
+      for(i=0;i<targets.length;i++) burst(targets[i].x,targets[i].y,14,PAL,'conf',200); }
+    if(pc<1.4&&G.cel>=1.4 && friends.length<8){
+      var side=bug.x<LW/2?LW+30:-30; friends.push(mkFriend(side,bug.y-60));
+      nFriends=friends.length; store('pipka.ladybird.friends',nFriends); snd.friend();
+    }
+    if(G.cel>0 && G.cel<4.5 && Math.random()<dt*10)
+      burst(Math.random()*LW,-10,1,PAL,'conf',40);
+    if(G.cel>=6.2) nextScene();
+  }
+  if(G.fade>0) G.fade=Math.max(0,G.fade-dt/1.4);
+  for(i=0;i<clouds.length;i++){ var cl=clouds[i]; cl.x+=cl.v*dt; if(cl.x>LW+120) cl.x=-120; }
+  for(i=0;i<flies.length;i++){ var fl=flies[i]; fl.x+=Math.sin(G.t*fl.v+fl.ph)*18*dt; fl.y+=Math.cos(G.t*fl.v*0.8+fl.ph*2)*12*dt; }
+  /* --- частицы --- */
+  for(i=parts.length-1;i>=0;i--){ var p=parts[i]; p.life+=dt;
+    if(p.life>=p.max){ parts.splice(i,1); continue; }
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.rot+=p.vr*dt;
+    if(p.kind==='conf'){ p.vy+=90*dt; p.vx*=1-dt*1.5; p.vy*=1-dt*0.8; }
+    else if(p.kind==='heart'){ p.vy-=10*dt; }
+    else { p.vx*=1-dt*3; p.vy*=1-dt*3; }
+  }
+}
+function nextScene(){
+  BGP=BG; G.fade=1; G.cel=-1;
+  G.scene=(G.scene+1)%SCN.length; if(G.scene===0) G.round++;
+  BG=bakeBg(G.scene,G.round);
+  makeTargets(); snd.whoosh();
+}
+
+/* ======================= РИСОВАНИЕ ======================= */
+function easeBack(x){ var c1=1.70158, c3=c1+1; return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2); }
+function circ(x,y,r,col){ ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
+function starPath(x,y,r,rot,inner){
+  ctx.beginPath();
+  for(var i=0;i<10;i++){ var a=rot+i*Math.PI/5-Math.PI/2, rr=i%2?r*(inner||0.5):r;
+    if(i) ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr); else ctx.moveTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr); }
+  ctx.closePath();
+}
+function heartPath(x,y,s){
+  ctx.beginPath(); ctx.moveTo(x,y+s*0.35);
+  ctx.bezierCurveTo(x-s*0.7,y-s*0.1,x-s*0.35,y-s*0.65,x,y-s*0.25);
+  ctx.bezierCurveTo(x+s*0.35,y-s*0.65,x+s*0.7,y-s*0.1,x,y+s*0.35);
+  ctx.fill();
+}
+/* Мордочка: глаза смотрят на коровку — так ребёнок видит, что его заметили */
+function face(x,y,r,open,smile,look){
+  var lx=0, ly=0;
+  if(look){ var dx=bug.x-x, dy=bug.y-y, d=Math.hypot(dx,dy)||1; lx=dx/d*r*0.08; ly=dy/d*r*0.08; }
+  ctx.fillStyle='#3a2a2a'; ctx.strokeStyle='#3a2a2a'; ctx.lineCap='round'; ctx.lineWidth=Math.max(1.5,r*0.09);
+  for(var s=-1;s<=1;s+=2){
+    var ex=x+s*r*0.36, ey=y-r*0.12;
+    if(open){ ctx.beginPath(); ctx.arc(ex+lx,ey+ly,r*0.13,0,Math.PI*2); ctx.fill();
+      circ(ex+lx+r*0.04,ey+ly-r*0.05,r*0.045,'#fff'); ctx.fillStyle='#3a2a2a'; }
+    else { ctx.beginPath(); ctx.arc(ex,ey-r*0.03,r*0.12,0.15*Math.PI,0.85*Math.PI); ctx.stroke(); }
+  }
+  dots([x-r*0.6,y+r*0.18,r*0.14, x+r*0.6,y+r*0.18,r*0.14],'rgba(255,120,150,.45)');
+  ctx.beginPath();
+  if(smile>1){ ctx.fillStyle='#7a2a3a'; ctx.arc(x,y+r*0.14,r*0.24,0,Math.PI); ctx.fill(); }
+  else { ctx.arc(x,y+r*0.08,r*0.26,0.18*Math.PI,0.82*Math.PI); ctx.stroke(); }
+}
+function drawSky(){
+  var s=SCN[G.scene], x=LW-110, y=s.sunY, r=s.body==='sun'?44:40, i;
+  var happy=G.cel>=0;
+  if(s.body==='sun'){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(G.t*0.15); ctx.fillStyle=s.ray;
+    for(i=0;i<12;i++){ ctx.rotate(Math.PI/6); ctx.beginPath(); ctx.moveTo(-7,-r-4); ctx.lineTo(0,-r-20-(i%2)*8); ctx.lineTo(7,-r-4); ctx.fill(); }
+    ctx.restore();
+    circ(x,y,r,s.sunC);
+    face(x,y,r,true,happy?2:1,true);
+  } else {
+    var gr=ctx.createRadialGradient(x,y,r*0.6,x,y,r*2.2);
+    gr.addColorStop(0,'rgba(255,245,200,.35)'); gr.addColorStop(1,'rgba(255,245,200,0)');
+    ctx.fillStyle=gr; ctx.fillRect(x-r*2.3,y-r*2.3,r*4.6,r*4.6);
+    circ(x,y,r,s.sunC);
+    dots([x-14,y+16,6, x+18,y-20,4, x+22,y+10,3],'rgba(220,210,160,.3)');
+    /* луна спит, пока не зажжены все звёзды */
+    face(x,y,r,happy,happy?2:1,happy);
+  }
+  if(s.cloud) for(i=0;i<clouds.length;i++){ var c=clouds[i], k=c.s;
+    ctx.globalAlpha=0.9; dots([c.x,c.y,22*k, c.x+24*k,c.y-10*k,26*k, c.x+52*k,c.y,22*k, c.x+26*k,c.y+8*k,22*k],s.cloud); ctx.globalAlpha=1; }
+}
+function drawRainbow(){
+  if(G.cel<0) return;
+  var s=SCN[G.scene], cx=LW/2, cy=LH*0.98, R0=Math.min(LW*0.46,LH*0.86);
+  var sweep=Math.min(1,G.cel/1.6), fade=G.cel>5?Math.max(0,1-(G.cel-5)/1.2):1;
+  if(s.tgt==='star'){
+    /* ночью вместо радуги — падающие звёзды */
+    for(var j=0;j<5;j++){ var tt=(G.cel*0.6+j*0.37)%1, sx=LW*(0.15+j*0.17)+tt*160, sy=40+j*22+tt*120;
+      ctx.globalAlpha=fade*(1-tt); ctx.strokeStyle='#fff8d0'; ctx.lineWidth=3; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx-50,sy-36); ctx.stroke();
+      ctx.fillStyle='#fff'; starPath(sx,sy,7,0,0.45); ctx.fill(); }
+    ctx.globalAlpha=1; return;
+  }
+  var cols=['#ff5a5a','#ffa23a','#ffe14d','#6fd36a','#4fb4ff','#6b6bff','#b46bff'];
+  ctx.globalAlpha=0.8*fade; ctx.lineWidth=13; ctx.lineCap='butt';
+  for(var i=0;i<cols.length;i++){ ctx.strokeStyle=cols[i];
+    ctx.beginPath(); ctx.arc(cx,cy,R0-i*13,Math.PI,Math.PI+Math.PI*sweep); ctx.stroke(); }
+  ctx.globalAlpha=1;
+}
+function drawFlower(f){
+  var b=f.open?easeBack(f.bt):0, dance=G.cel>=0?Math.sin(G.t*6+f.ph)*0.12:0;
+  var sway=Math.sin(G.t*1.3+f.ph)*0.05+Math.sin(G.t*18)*f.wig*0.25+dance;
+  var bob=-Math.sin(f.bounce*Math.PI)*8;
+  /* стебель и листья */
+  ctx.strokeStyle='#3f9a3a'; ctx.lineWidth=5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(f.x,f.y+52); ctx.quadraticCurveTo(f.x-4,f.y+26,f.x+Math.sin(sway)*20,f.y+bob); ctx.stroke();
+  ctx.fillStyle='#4fb544';
+  ctx.beginPath(); ctx.ellipse(f.x-10,f.y+36,11,5,-0.5,0,7); ctx.ellipse(f.x+9,f.y+42,10,4.5,0.5,0,7); ctx.fill();
+  var hx=f.x+Math.sin(sway)*20, hy=f.y+bob;
+  if(!f.open){
+    /* бутон дышит и светится — это «сюда» без слов */
+    var pulse=1+Math.sin(G.t*3+f.ph)*0.06+f.wig*Math.sin(G.t*20)*0.08;
+    var gr=ctx.createRadialGradient(hx,hy,4,hx,hy,FL_R*1.6);
+    gr.addColorStop(0,'rgba(255,255,255,.55)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(hx,hy,FL_R*1.6*pulse,0,7); ctx.fill();
+    ctx.save(); ctx.translate(hx,hy); ctx.rotate(sway); ctx.scale(pulse,pulse);
+    ctx.fillStyle='#5cc04e'; ctx.beginPath(); ctx.moveTo(0,-FL_R*0.9);
+    ctx.quadraticCurveTo(FL_R*0.75,-FL_R*0.1,0,FL_R*0.6); ctx.quadraticCurveTo(-FL_R*0.75,-FL_R*0.1,0,-FL_R*0.9); ctx.fill();
+    ctx.fillStyle=f.col; ctx.beginPath(); ctx.moveTo(0,-FL_R*0.85);
+    ctx.quadraticCurveTo(FL_R*0.35,-FL_R*0.45,0,-FL_R*0.15); ctx.quadraticCurveTo(-FL_R*0.35,-FL_R*0.45,0,-FL_R*0.85); ctx.fill();
+    face(0,FL_R*0.12,FL_R*0.42,false,1,false);
+    ctx.restore();
+    return;
+  }
+  ctx.save(); ctx.translate(hx,hy); ctx.rotate(sway);
+  var r=FL_R*(1+f.bounce*0.12);
+  ctx.fillStyle=f.col;
+  for(var i=0;i<f.pet;i++){ var an=f.spin+i*Math.PI*2/f.pet;
+    ctx.beginPath(); ctx.ellipse(Math.cos(an)*r*0.62*b,Math.sin(an)*r*0.62*b,Math.max(0.1,r*0.5*b),Math.max(0.1,r*0.32*b),an,0,7); ctx.fill(); }
+  ctx.fillStyle='rgba(255,255,255,.35)';
+  for(i=0;i<f.pet;i++){ an=f.spin+i*Math.PI*2/f.pet;
+    ctx.beginPath(); ctx.ellipse(Math.cos(an)*r*0.7*b,Math.sin(an)*r*0.7*b,Math.max(0.1,r*0.2*b),Math.max(0.1,r*0.1*b),an,0,7); ctx.fill(); }
+  circ(0,0,r*0.44*Math.max(0.3,b),'#ffd84a');
+  if(b>0.5) face(0,0,r*0.44,f.blink<=0,G.cel>=0||f.bounce>0.5?2:1,true);
+  ctx.restore();
+}
+var ZFONT='600 13px "IBM Plex Mono",monospace';
+function drawStar(f){
+  var b=f.open?easeBack(f.bt):0, bob=-Math.sin(f.bounce*Math.PI)*8+Math.sin(G.t*1.5+f.ph)*3;
+  var x=f.x+Math.sin(G.t*18)*f.wig*4, y=f.y+bob, r=24*(1+f.bounce*0.15), rot=Math.sin(G.t*1.1+f.ph)*0.12+(G.cel>=0?G.t*1.5:0);
+  if(!f.open){
+    var pulse=1+Math.sin(G.t*3+f.ph)*0.07;
+    var gr=ctx.createRadialGradient(x,y,4,x,y,r*1.8);
+    gr.addColorStop(0,'rgba(200,210,255,.35)'); gr.addColorStop(1,'rgba(200,210,255,0)');
+    ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(x,y,r*1.8*pulse,0,7); ctx.fill();
+    ctx.fillStyle='#8c90c4'; starPath(x,y,r*pulse,rot,0.52); ctx.fill();
+    face(x,y+2,r*0.5,false,1,false);
+    /* «з-з» над спящей звездой */
+    ctx.fillStyle='rgba(220,225,255,.7)'; ctx.font=ZFONT;
+    var zt=(G.t*0.6+f.ph)%1; ctx.globalAlpha=1-zt; ctx.fillText('z',x+r*0.7+zt*8,y-r*0.8-zt*16); ctx.globalAlpha=1;
+    return;
+  }
+  var g2=ctx.createRadialGradient(x,y,r*0.3,x,y,r*2.6);
+  g2.addColorStop(0,'rgba(255,240,150,.6)'); g2.addColorStop(1,'rgba(255,240,150,0)');
+  ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(x,y,r*2.6,0,7); ctx.fill();
+  ctx.fillStyle='#ffe066'; starPath(x,y,r*Math.max(0.4,b),rot,0.52); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.4)'; starPath(x,y,r*0.55*Math.max(0.4,b),rot,0.52); ctx.fill();
+  if(b>0.5) face(x,y+2,r*0.5,f.blink<=0,G.cel>=0||f.bounce>0.5?2:1,true);
+}
+function drawBalloon(b){
+  ctx.strokeStyle='rgba(60,60,60,.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(b.x,b.y+30);
+  ctx.bezierCurveTo(b.x+8,b.y+46,b.x-8,b.y+60,b.x+Math.sin(G.t*2+b.ph)*5,b.y+78); ctx.stroke();
+  ctx.fillStyle=b.col; ctx.beginPath(); ctx.ellipse(b.x,b.y,23,29,0,0,7); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(b.x-5,b.y+33); ctx.lineTo(b.x+5,b.y+33); ctx.lineTo(b.x,b.y+27); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.45)'; ctx.beginPath(); ctx.ellipse(b.x-8,b.y-11,6,10,-0.4,0,7); ctx.fill();
+}
+function drawFriend(f){
+  var flap=Math.abs(Math.sin(G.t*9+f.ph)), w=14;
+  ctx.save(); ctx.translate(f.x,f.y);
+  ctx.fillStyle=f.col; ctx.globalAlpha=0.92;
+  for(var s=-1;s<=1;s+=2){
+    ctx.beginPath(); ctx.ellipse(s*w*0.65*flap,-4,w*0.75*flap+1,w*0.62,s*0.4,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(s*w*0.5*flap,7,w*0.5*flap+1,w*0.42,-s*0.4,0,7); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#3a2a2a'; ctx.beginPath(); ctx.ellipse(0,1,2.8,10,0,0,7); ctx.fill();
+  ctx.strokeStyle='#3a2a2a'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(-1,-8); ctx.quadraticCurveTo(-4,-15,-7,-16); ctx.moveTo(1,-8); ctx.quadraticCurveTo(4,-15,7,-16); ctx.stroke();
+  ctx.restore();
+}
+/* Несколько кругов одним путём без moveTo canvas соединяет отрезками, и заливка
+   получает клинья между ними — так были сломаны пятна коровки. Каждый круг — свой подпуть */
+function dots(list,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  for(var i=0;i<list.length;i+=3){ ctx.moveTo(list[i]+list[i+2],list[i+1]); ctx.arc(list[i],list[i+1],list[i+2],0,Math.PI*2); }
+  ctx.fill();
+}
+/* Коровка смотрит на ребёнка, а не сверху: голова над панцирем, глаза крупные.
+   Когда летит — половинки панциря поднимаются на шарнире у головы и за ними
+   трепещут крылья; села — сложила, и стали видны лапки */
+function drawBug(){
+  var R=BUG_R, o=bug.open, tilt=Math.max(-0.3,Math.min(0.3,bug.vx/VMAX*0.3)), s, i;
+  ctx.save(); ctx.translate(bug.x,bug.y+(1-o)*Math.sin(G.t*2)*1.2); ctx.rotate(tilt);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  /* крылья — за панцирем */
+  if(o>0.05){
+    var fl=0.55+0.45*Math.abs(Math.sin(bug.flap));
+    ctx.fillStyle='rgba(225,240,255,'+(0.6*o).toFixed(2)+')';
+    ctx.strokeStyle='rgba(120,150,190,'+(0.5*o).toFixed(2)+')'; ctx.lineWidth=1.2;
+    /* крылья выходят из-под надкрылий назад и в стороны, машут шириной */
+    for(s=-1;s<=1;s+=2){ ctx.beginPath(); ctx.ellipse(s*R*0.95,R*0.35,R*0.5*fl+0.5,R*1.15*o+0.5,-s*0.55,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s*R*0.4,-R*0.3); ctx.lineTo(s*R*1.45*o,R*1.1*o); ctx.stroke(); }
+  }
+  /* лапки — короткие, только у сидящей */
+  if(o<0.95){
+    ctx.globalAlpha=1-o; ctx.strokeStyle='#1d1d22'; ctx.lineWidth=R*0.13; ctx.beginPath();
+    for(i=0;i<3;i++){ var ly=-R*0.3+i*R*0.42;
+      for(s=-1;s<=1;s+=2){ ctx.moveTo(s*R*0.78,ly); ctx.lineTo(s*R*1.1,ly+R*0.14); } }
+    ctx.stroke(); ctx.globalAlpha=1;
+  }
+  /* усики и голова */
+  ctx.strokeStyle='#1d1d22'; ctx.lineWidth=R*0.07; ctx.beginPath();
+  for(s=-1;s<=1;s+=2){ ctx.moveTo(s*R*0.16,-R*1.4); ctx.quadraticCurveTo(s*R*0.22,-R*1.78,s*R*0.5,-R*1.86); }
+  ctx.stroke();
+  dots([-R*0.5,-R*1.86,R*0.1, R*0.5,-R*1.86,R*0.1, 0,-R*1.02,R*0.54],'#1d1d22');
+  /* брюшко, видное под раскрытым панцирем */
+  dots([0,R*0.08,R*0.88],'#2b2b33');
+  for(s=-1;s<=1;s+=2){
+    ctx.save();
+    ctx.translate(s*o*R*0.06,-R*0.85); ctx.rotate(-s*o*0.45); ctx.translate(0,R*0.85);
+    ctx.beginPath(); ctx.moveTo(0,-R);
+    ctx.arc(0,0,R,-Math.PI/2,Math.PI/2,s<0); ctx.closePath();
+    var gr=ctx.createRadialGradient(s*R*0.3,-R*0.4,R*0.1,0,0,R*1.05);
+    gr.addColorStop(0,'#ff6a55'); gr.addColorStop(0.6,'#e42d24'); gr.addColorStop(1,'#b3150f');
+    ctx.fillStyle=gr; ctx.fill();
+    ctx.strokeStyle='#8a100c'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.save(); ctx.clip();
+    /* семь точек: по три на половинке и одна общая у головы, которая
+       при раскрытии расходится надвое */
+    dots([0,-R*0.7,R*0.22, s*R*0.5,-R*0.25,R*0.2, s*R*0.58,R*0.38,R*0.18, s*R*0.2,R*0.68,R*0.15],'#1d1d22');
+    ctx.fillStyle='rgba(255,255,255,.45)';
+    ctx.beginPath(); ctx.ellipse(s*R*0.48,-R*0.62,R*0.18,R*0.08,s*0.6,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    ctx.restore();
+  }
+  /* глаза — поверх всего, чтобы панцирь их не перекрывал при наклоне */
+  var lx=Math.max(-1,Math.min(1,bug.vx/VMAX))*R*0.07, ly=Math.max(-1,Math.min(1,bug.vy/VMAX))*R*0.05;
+  for(s=-1;s<=1;s+=2){ var ex=s*R*0.23, ey=-R*1.2;
+    if(bug.blink>0||bug.laugh>0){
+      ctx.strokeStyle='#fff'; ctx.lineWidth=R*0.08; ctx.beginPath();
+      if(bug.laugh>0) ctx.arc(ex,ey+R*0.06,R*0.13,1.15*Math.PI,1.85*Math.PI);
+      else { ctx.moveTo(ex-R*0.13,ey); ctx.lineTo(ex+R*0.13,ey); }
+      ctx.stroke();
+    } else {
+      dots([ex,ey,R*0.18],'#fff');
+      dots([ex+lx,ey+ly+R*0.02,R*0.1],'#1d1d22');
+      dots([ex+lx+R*0.04,ey+ly-R*0.03,R*0.04],'#fff');
+    }
+  }
+  ctx.restore();
+}
+function drawFlies(){
+  for(var i=0;i<flies.length;i++){ var f=flies[i], a=0.4+0.6*Math.max(0,Math.sin(G.t*2.2+f.ph*3));
+    var gr=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,12);
+    gr.addColorStop(0,'rgba(230,255,140,'+(0.8*a).toFixed(2)+')'); gr.addColorStop(1,'rgba(230,255,140,0)');
+    ctx.fillStyle=gr; ctx.fillRect(f.x-12,f.y-12,24,24); }
+}
+function drawParts(){
+  for(var i=0;i<parts.length;i++){ var p=parts[i], a=1-p.life/p.max;
+    ctx.globalAlpha=Math.max(0,a); ctx.fillStyle=p.col;
+    if(p.kind==='heart') heartPath(p.x,p.y,p.s);
+    else if(p.kind==='conf'){ ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillRect(-p.s*0.5,-p.s*0.3,p.s,p.s*0.6); ctx.restore(); }
+    else { starPath(p.x,p.y,p.s,p.rot,0.45); ctx.fill(); }
+  }
+  ctx.globalAlpha=1;
+}
+function paint(){
+  var k=DPR*SC;
+  ctx.setTransform(1,0,0,1,0,0);
+  if(BG) ctx.drawImage(BG,0,0); else { ctx.fillStyle='#bfe6ff'; ctx.fillRect(0,0,cv.width,cv.height); }
+  ctx.setTransform(k,0,0,k,DPR*OX,DPR*OY);
+  drawSky();
+  if(G.fade>0&&BGP){ ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=G.fade; ctx.drawImage(BGP,0,0); ctx.globalAlpha=1; ctx.setTransform(k,0,0,k,DPR*OX,DPR*OY); }
+  drawRainbow();
+  if(G.fade<0.6){
+    ctx.globalAlpha=1-G.fade/0.6;
+    for(var i=0;i<targets.length;i++){ if(targets[i].kind==='star') drawStar(targets[i]); else drawFlower(targets[i]); }
+    ctx.globalAlpha=1;
+  }
+  drawFlies();
+  for(i=0;i<balloons.length;i++) drawBalloon(balloons[i]);
+  for(i=0;i<friends.length;i++) drawFriend(friends[i]);
+  drawBug();
+  drawParts();
+}
+
+/* ======================= HUD ======================= */
+var hudT=0;
+function hud(dt){
+  hudT+=dt; if(hudT<0.1) return; hudT=0;
+  el('hGardens').textContent=gardens; el('hFriends').textContent=friends.length;
+  dot.style.transform='translate('+(stick.x*24).toFixed(1)+'px,'+(stick.y*24).toFixed(1)+'px)';
+  rateOut.textContent=stick.rate;
+  var fly=G.phase==='fly', unl=fly&&!document.pointerLockElement&&!botStick&&performance.now()-G.lockT>1200;
+  field.classList.toggle('play',fly);
+  if(el('lockHint').hidden===unl) el('lockHint').hidden=!unl;
+}
+
+/* ======================= ЦИКЛ ======================= */
+var last=0, acc=0, FIX=1/120;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!last) last=ts;
+  var dt=Math.min(0.05,(ts-last)/1000); last=ts;
+  if(dt<=0) return;
+  if(G.phase==='fly'){
+    readStick(dt);
+    acc+=dt;
+    var guard=0;
+    while(acc>=FIX && guard++<12 && G.phase==='fly'){ step(FIX); acc-=FIX; }
+    if(guard>=12) acc=0;
+    musicTick();
+    paint();
+  } else if(G.phase==='start'){
+    /* на заставке коровка просто живёт: моргает, облака плывут */
+    G.t+=dt; bug.blink-=dt; if(bug.blink<-3) bug.blink=0.14;
+    for(var i=0;i<clouds.length;i++){ clouds[i].x+=clouds[i].v*dt; if(clouds[i].x>LW+120) clouds[i].x=-120; }
+    paint();
+  }
+  hud(dt);
+}
+
+/* ======================= ФАЗЫ ======================= */
+/* Порядок важен: в Chromium requestFullscreen расходует жест пользователя, и захват
+   курсора, запрошенный после него, браузер отклоняет — курсор ездил по всему экрану.
+   Поэтому сначала захват, потом полный экран; если захват всё же слетел, его вернёт
+   любой клик или клавиша — у ребёнка их будет предостаточно */
+function lockAll(){
+  G.lockT=performance.now();
+  lockPointer();
+  if(wantFull && field.requestFullscreen && !document.fullscreenElement){
+    try{
+      var pr=field.requestFullscreen({navigationUI:'hide'});
+      if(pr&&pr.then) pr.then(function(){
+        /* Keyboard Lock: только Chromium и только на весь экран; Esc тогда выходит
+           долгим нажатием, а короткий Esc ребёнка превращается в шарик */
+        if(navigator.keyboard&&navigator.keyboard.lock) navigator.keyboard.lock().catch(function(){});
+        lockPointer();
+      }).catch(function(){});
+    }catch(e){}
+  }
+}
+function lockPointer(){
+  if(document.pointerLockElement||!cv.requestPointerLock) return;
+  try{ var p=cv.requestPointerLock(); if(p&&p.catch) p.catch(function(){}); }catch(e){}
+}
+function start(){
+  initAudio();
+  if(AC && AC.state==='suspended') AC.resume();
+  G.phase='fly'; last=0; acc=0; accX=accY=0;
+  ovStart.hidden=true; ovPause.hidden=true;
+  lockAll();
+}
+function pause(){
+  if(G.phase!=='fly') return;
+  G.phase='pause'; ovPause.hidden=false; keys={};
+  if(AC) try{ AC.suspend(); }catch(e){}
+  if(document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
+  paint();
+}
+function resume(){
+  if(G.phase!=='pause') return;
+  G.phase='fly'; ovPause.hidden=true; accX=0; accY=0; last=0; acc=0; G.idle=0;
+  if(AC) try{ AC.resume(); }catch(e){}
+  lockAll();
+}
+/* Chromium отпускает захват курсора в момент перехода на весь экран — замерено
+   в безголовом прогоне: игра вставала на паузу сразу после «Играть». Поэтому пауза —
+   только если захват был и прожил дольше перехода; иначе просим его ещё раз */
+document.addEventListener('pointerlockchange',function(){
+  if(document.pointerLockElement){ G.locked=true; return; }
+  var had=G.locked; G.locked=false;
+  if(G.phase!=='fly'||botStick) return;
+  if(had && performance.now()-G.lockT>800) pause(); else lockPointer();
+});
+el('btnStart').addEventListener('click',start);
+el('btnResume').addEventListener('click',function(e){ e.stopPropagation(); resume(); });
+/* в паузе подойдёт любой тычок в поле — ребёнок не попадёт в кнопку, и не нужно */
+field.addEventListener('mousedown',function(e){
+  if(G.phase==='pause' && e.target.tagName!=='BUTTON') resume();
+});
+var sl=el('sens'), sv=el('sensVal');
+sl.value=sens; sv.textContent=sens+' px/s';
+sl.addEventListener('input',function(){ sens=num(sl.value,560); sv.textContent=sens+' px/s'; store('pipka.ladybird.sens',sens); });
+var mb=el('btnMute'), mub=el('btnMusic'), fb=el('btnFull');
+function drawButtons(){
+  mb.textContent=t('snd')+': '+(muted?t('off'):t('on'));
+  mub.textContent=t('mus')+': '+(musicOn?t('on'):t('off'));
+  fb.textContent=t('scr')+': '+(wantFull?t('scrF'):t('scrW'));
+}
+mb.addEventListener('click',function(){
+  muted=!muted; store('pipka.mute',muted?'1':'0'); drawButtons();
+  if(master) at(master.gain, muted?0:0.7, 0.05);
+});
+mub.addEventListener('click',function(){
+  musicOn=!musicOn; store('pipka.ladybird.music',musicOn?'1':'0'); drawButtons();
+  if(mus) at(mus.gain, musicOn?0.5:0, 0.05);
+});
+fb.addEventListener('click',function(){ wantFull=!wantFull; store('pipka.ladybird.full',wantFull?'1':'0'); drawButtons(); });
+el('btnLang').addEventListener('click',function(){
+  LANG=(LANG==='ru'?'en':'ru'); store('pipka.lang',LANG); applyLang();
+});
+
+/* крючок для прогона ботом в безголовом браузере; в обычной игре не используется */
+if(location.hash==='#test') window.__ladybird={G:G,bug:bug,step:step,paint:paint,start:start,
+  targets:function(){return targets;}, balloons:function(){return balloons;}, friends:function(){return friends;},
+  parts:function(){return parts;}, song:function(){return song;}, makeSong:makeSong, keyPlace:keyPlace, balloon:balloon, giggle:giggle,
+  setStick:function(x,y){ botStick={x:x,y:y}; }, readStick:readStick, LW:function(){return LW;}, LH:LH};
+
+function boot(saved){
+  if(saved&&saved.sens){ sens=saved.sens; sl.value=sens; sv.textContent=sens+' px/s'; }
+  resize(); reset(); applyLang(); paint();
+  requestAnimationFrame(frame);
+}
+try{
+  if(window.claude && window.claude.hot){
+    window.claude.hot.snapshot(function(){ return {sens:sens}; });
+    if(window.claude.hot.ready) window.claude.hot.ready(boot); else boot(window.claude.hot.data||{});
+  } else boot({});
+}catch(e){ boot({}); }
+})();
+</script>
+</body>
+</html>
