@@ -12,6 +12,9 @@ race/index.html    Pipka Circuit    — self-contained game
 moon/index.html    Pipka Cosmonaut  — self-contained game
 danmaku/index.html Pipka Danmaku    — self-contained game
 ladybird/index.html Pipka Ladybird  — self-contained game, for a three-year-old
+letters/index.html Pipka Letters    — copy of the ladybird with letters, words and parent stats
+letters/words.js   word lists and letter pronunciation, read by the game and the generator
+letters/make-voice.mjs  Gemini TTS generator: voice-settings.json + words.js → voice-ru.js, voice-en.js
 physics-test.js    model harness for the car and the lander (node, no deps)
 LICENSE            MIT
 README.md          English
@@ -22,6 +25,20 @@ README.ru.md       Russian
 Every HTML file is a complete standalone document. There is **no build step, no bundler
 and no dependencies**. The only external resource is the Google Fonts stylesheet. Keep it
 that way: these pages are meant to run from `file://` on a fifteen-year-old laptop.
+
+The one exception is `letters/`, which loads `words.js` and the generated `voice-ru.js` /
+`voice-en.js` through plain `<script src>` (fetch does not work from `file://`). The game
+must keep running when any of them is missing: a short built-in word list, then the
+system speech synthesiser, then silence. The voice files are output of
+`make-voice.mjs`, never edited by hand. Clips are voiced in batches (all letters in one
+request, separated by `<long pause>`, then cut at the n−1 longest pauses), because one
+request per letter gave a different delivery each time; keep it that way. Each batch is
+hashed over model, voice, language, pronunciation, style and every text in it, so a
+rerun regenerates only changed batches, always whole. Language and pronunciation are
+per language in `voice-settings.json` — never hard-code one language's accent into the
+shared prompt. Raw batches are cached in `letters/.voice-cache/` (git-ignored);
+`--recut` re-cuts them without the API. `PIPKA_TTS_MOCK=1` runs the whole pipeline
+without the API, with tones instead of speech — do not commit its output.
 
 ## Hard rules
 

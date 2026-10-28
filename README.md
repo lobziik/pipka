@@ -24,9 +24,10 @@ into an analogue stick deflection of −1…+1.
 | `moon/index.html` | **Pipka Cosmonaut** — lunar landing: analogue throttle, fuel, contact lamp |
 | `danmaku/index.html` | **Pipka Danmaku** — almost Touhou: procedural waves, Cirno every ninth, generated music |
 | `ladybird/index.html` | **Pipka Ladybird** — for a three-year-old: a ladybird, buds that bloom into notes, balloons from every key |
+| `letters/index.html` | **Pipka Letters** — the ladybird copied with letters: a word on top, letters collected in order, a timer and statistics for the grown-up |
 | `physics-test.js` | Car model run: `node physics-test.js` |
 
-No dependencies and no build step: five self-contained HTML files.
+No dependencies and no build step: six self-contained HTML files.
 
 ```sh
 setsid -f xdg-open index.html >/dev/null 2>&1   # or just open it in a browser
@@ -60,6 +61,10 @@ Firing is automatic.
 **Pipka Ladybird** — the pipka flies the ladybird (let go and she lands), any key launches a
 balloon from where it sits on the keyboard, the buttons under the space bar make her laugh
 and the flowers sing. The game goes full screen; hold `Esc` to leave.
+
+**Pipka Letters** — controls as in the ladybird; fly to the word's letters in order. A key
+launches a balloon carrying that key's letter, the buttons under the space bar repeat the
+word. Word level, voice and statistics are in the bar below the field.
 
 ## Sensitivity
 
@@ -191,6 +196,87 @@ bud clears a garden in 10–12 s including the six-second celebration; one that 
 random direction for 0.2–1 s and lets go 30% of the time takes 25–124 s, median about 60
 (before the stronger pull on the last two buds the tail reached 270 s).
 
+## Letters
+
+A copy of the ladybird, not a mode of it. The whole word is at the top as tiles; every bud
+carries a letter. Collection is in order: the right letter blooms and flies to its place,
+a wrong one shakes its head. Notes go by position in the word, so a collected word plays a
+rising pentatonic, and repeated letters (MAMA) are interchangeable. A finished word is read:
+letter by letter with a note and the voice, then whole, then the celebration.
+
+The pull goes only towards the right letter (130 px, 1.5 times as far for the word's last
+two letters). A miss is not touching a wrong letter but stopping on it: below 60 px/s for
+half a second running; flying straight through, even at half speed, takes about a second.
+After a miss, or six seconds without input, the right letter waves and names itself.
+
+Levels: 1 — short words, letters left to right in reading order; 2 — the same, scattered;
+3 — plus one extra letter not in the word; 4 — longer words and two extras. The first word
+is MAMA (MOM in English). A balloon's letter comes from the physical key and the game's
+language, not the current keyboard layout.
+
+The voice is first of all recordings generated with Gemini TTS (`gemini-3.8-flash-tts`):
+identical on every machine, independent of the system. The dictionary is
+`letters/words.js` (words, alphabet and how each letter sounds: Russian ones as sounds,
+as in a primer, М is "mmm" and П a bare "p"; the hard and soft signs are named; English
+ones are still names). The voice settings are `letters/voice-settings.json`: per language
+a Gemini voice, the language and pronunciation (`Russian (ru-RU)`, `English (en-GB)` in
+British RP — without them the generator pulled Russian letters towards English
+pronunciation) and a delivery style each for letters, words and praise. The generator
+has no dependencies beyond node and ffmpeg:
+
+```sh
+export GEMINI_API_KEY=...                      # key from Google AI Studio
+node letters/make-voice.mjs --dry              # what would be generated
+node letters/make-voice.mjs                    # both languages → letters/voice-ru.js, voice-en.js
+node letters/make-voice.mjs --lang en --only letter --force  # redo the letter batch
+node letters/make-voice.mjs --recut            # re-cut and re-encode from the cache, no API
+```
+
+Voicing goes in batches: all letters as one long recording separated by `<long pause>`,
+words as two, praise as one. One letter per request made the style wander: each letter
+was born afresh. The recording is cut into exactly as many pieces as there are items, at
+the longest pauses, so the gap inside "твёрдый знак" or the closure before a "t" never
+becomes a cut. A doubtful cut (two items run together) gets a warning; too few pauses (an
+item skipped) and the batch is not written. Loudness is evened out with one gain per
+batch, not per clip, silence trimmed from both ends, everything encoded to Opus at
+32 kbit/s — about 300 KB per language. Change one letter and the whole letter batch is
+redone, or it would come from a different take again; raw batch recordings stay in
+`letters/.voice-cache/` (git-ignored). The
+recordings come first in the voice list next to the Voice button; music ducks while the
+voice speaks. While recordings are in use the system voice is never mixed in: no clip
+means silence (otherwise a soft sign off the keyboard spoke in espeak in the middle of the
+proper voice). A system voice chosen before recordings existed does not override them.
+Reading letter by letter waits for each letter to finish.
+
+The fallback is the system `speechSynthesis`; with neither recordings nor a system voice
+the game stays quiet and the button reads "Voice: none on system". On Linux both Chromium and Firefox get their voices from `speech-dispatcher`; without
+it there are none:
+
+```sh
+sudo pacman -S speech-dispatcher rhvoice-voice-anna rhvoice-voice-elena   # Arch, official repos
+pkill speech-dispatcher                             # respawns on its own and finds the rhvoice module
+spd-say -o rhvoice -L                               # voices the module offers
+spd-say -o rhvoice -y Anna -l ru 'мама'             # check outside the browser
+```
+
+espeak-ng works too but sounds robotic; RHVoice is far more human in Russian, the female
+voices being anna, elena, irina, tatiana, victoria and arina. Restart the browser after
+installing; Chromium may also need `--enable-speech-dispatcher` (on Arch, a line in
+`~/.config/chromium-flags.conf`). When a language has several voices a list appears next
+to the Voice button; by default the game puts espeak and mbrola last, and a chosen voice
+says the current word at once and is remembered per language.
+
+Statistics are for the grown-up, under `pipka.letters.stats` in `localStorage`, separately
+per language. Word time only runs in flight, not in pause or celebration. The statistics
+window has today and all time, average and best time per word, accuracy (letters collected
+against misses), a letter table in alphabet order (times collected, average search time,
+misses while it was wanted), "wanted — stopped on" pairs and the last 20 words (200 kept).
+
+Checked by a bot in headless Chromium: flying straight at the right letter collects a short
+word in 3–6 s and a long one with two extras in 4–8 s; a random one takes 12–169 s on level
+one (median about 80), about 100 on level three. The voice is not checked: headless Chromium
+has no synthesiser.
+
 ## Sound
 
 Everything is synthesised in WebAudio, no samples: the engine is a sawtooth plus a
@@ -207,14 +293,14 @@ Per-game write-ups — what was asked, how the request turned into that game, wh
 nub's character dictated and what shipped broken — are on the site hub (`index.html`),
 in both languages. The short version:
 
-| | Pipka Pilot | Pipka Circuit | Pipka Cosmonaut | Pipka Danmaku | Pipka Ladybird |
-|---|---|---|---|---|---|
-| Wall clock | 14 min | 59 min, two versions | 52 min | ~20 min | ~40 min |
-| Tokens | ~76k | ~120k | ~55k | ~200k | ~150k |
-| Code | 470 lines | 850 lines + 14 checks | 790 lines + 9 checks | 1300 lines | 1000 lines |
-| Verified | syntax only | numerically | numerically, before publishing | by bot and timing, not by ear | by bot and real input events, not by a child |
-| Shipped broken | overlays never hid | ice, endless spin | nothing | not known yet | pointer lock in full screen, the ladybird's spots |
-| Model | Opus 5 (`claude-opus-5`) | Opus 5 | Opus 5 | Opus 5.5 (`claude-opus-5-5`) | Opus 5.5 |
+| | Pipka Pilot | Pipka Circuit | Pipka Cosmonaut | Pipka Danmaku | Pipka Ladybird | Pipka Letters |
+|---|---|---|---|---|---|---|
+| Wall clock | 14 min | 59 min, two versions | 52 min | ~20 min | ~40 min | ~35 min |
+| Tokens | ~76k | ~120k | ~55k | ~200k | ~150k | — |
+| Code | 470 lines | 850 lines + 14 checks | 790 lines + 9 checks | 1300 lines | 1000 lines | 1380 lines |
+| Verified | syntax only | numerically | numerically, before publishing | by bot and timing, not by ear | by bot and real input events, not by a child | by bot and screenshots; voice with tones |
+| Shipped broken | overlays never hid | ice, endless spin | nothing | not known yet | pointer lock in full screen, the ladybird's spots | the voice: silent without speech-dispatcher, "vile" with espeak |
+| Model | Opus 5 (`claude-opus-5`) | Opus 5 | Opus 5 | Opus 5.5 (`claude-opus-5-5`) | Opus 5.5 | Opus 5.5 |
 
 The first two times what shipped broken was exactly what had not been measured. For the
 third the harness existed before the first publish and caught two discrepancies — a

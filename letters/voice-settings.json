@@ -1,0 +1,26 @@
+{
+  "_comment": "Настройки голоса для make-voice.mjs. На каждый язык: voice — готовый голос Gemini (Sulafat, Achird, Vindemiatrix, Leda...) или id своего голоса voice_... из Voice design; language и pronunciation — язык и произношение, подставляются в каждый запрос этого языка, чтобы генератор не тянул в чужое произношение; style — подача отдельно для букв, слов и похвалы. Текст модель читает дословно, поэтому вся подача — здесь. Буквы, слова и похвала озвучиваются пачками (batch — сколько элементов в одном запросе), чтобы подача внутри пачки была одна. Поменял что-то — перезапусти скрипт: перегенерируются только затронутые пачки.",
+  "model": "gemini-3.8-flash-tts",
+  "bitrate": "32k",
+  "batch": 40,
+  "ru": {
+    "voice": "Sulafat",
+    "language": "Russian (ru-RU)",
+    "pronunciation": "standard Moscow Russian, native Russian phonetics only, nothing anglicised",
+    "style": {
+      "letter": "warm, gentle kindergarten teacher showing a three-year-old the sounds of Russian letters. Each item is an isolated speech sound, not a letter name: a doubled or tripled consonant is one held sound (\"ммм\" is a hummed m, \"ссс\" a hiss), a single consonant is said as its bare short sound with no vowel added and never as its name (\"п\" is a puff of p, not \"пэ\"), a vowel is said clearly; only \"твёрдый знак\" and \"мягкий знак\" are words. Calm, clear, slightly slow",
+      "word": "warm, gentle kindergarten teacher talking to a three-year-old; single words, said clearly and slowly, cheerful",
+      "praise": "warm and delighted, proud of a small child, bright but not loud"
+    }
+  },
+  "en": {
+    "voice": "Sulafat",
+    "language": "English (en-GB)",
+    "pronunciation": "British Received Pronunciation (RP)",
+    "style": {
+      "letter": "warm, gentle preschool teacher talking to a three-year-old; isolated letter names, said clearly and a little slowly, with a smile",
+      "word": "warm, gentle preschool teacher talking to a three-year-old; single words, said clearly and slowly, cheerful",
+      "praise": "warm and delighted, proud of a small child, bright but not loud"
+    }
+  }
+}
