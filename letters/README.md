@@ -11,7 +11,8 @@ the slider at the bottom sets pipka sensitivity, and the `EN`/`RU` button switch
 language (the choice is shared across the site through `localStorage`).
 
 Controls as in the ladybird; fly to the word's letters in order. A key
-launches a balloon carrying that key's letter, the buttons under the space bar repeat the
+launches a balloon carrying that key's letter (the Balloons setting below the field: with
+letters, without — as in the ladybird — or off; the choice is remembered), the buttons under the space bar repeat the
 word. Word level, voice and statistics are in the bar below the field.
 
 ## How it works
