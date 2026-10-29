@@ -39,6 +39,7 @@ xinput set-prop <id> "libinput Accel Speed" 0.4
 | [**Pipka Danmaku**](danmaku/) | Almost Touhou: procedural waves, and every ninth one is Cirno, ⑨ as it should be. |
 | [**Pipka Ladybird**](ladybird/) | For a three-year-old: you cannot lose, and a palm on the keyboard is a balloon. |
 | [**Pipka Letters**](letters/) | The ladybird learns to read: letters in order, sounds from a generated voice, statistics for the parent. |
+| [**Pipka Féerie**](feerie/) | A tunnel that dreams itself: mandalas with slits, notes as beads of light, and game over is called dawn. |
 
 ## Documentation
 
@@ -73,4 +74,5 @@ DIVERGENCE: ██████ (WITHIN-TOLERANCE)
 
 AI wrote the games. Human applied pressure. Pressure measured in px/s.
 Synthetic voice rated "vile". Replaced. Re-rating pending.
+Psychedelia rendered at 544×300. Upscaled by CSS. Not yet heard.
 ```

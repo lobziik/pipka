@@ -19,7 +19,8 @@ LICENSE             MIT
 .nojekyll           GitHub Pages serves the files as they are
 .gitignore
 
-<game>/             one folder per game: plane, race, moon, danmaku, ladybird, letters
+<game>/             one folder per game: plane, race, moon, danmaku, ladybird, letters,
+                    feerie
   index.html        the game — a complete standalone document
   README.md         details of this game, English
   README.ru.md      the same, Russian

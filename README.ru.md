@@ -37,6 +37,7 @@ xinput set-prop <id> "libinput Accel Speed" 0.4
 | [**Пипка-Данмаку**](danmaku/) | Почти тохо: процедурные волны, и каждая девятая — Сырно, ⑨ как положено. |
 | [**Пипка-Коровка**](ladybird/) | Для трёхлетки: проиграть нельзя, а ладошка по клавиатуре — это воздушный шарик. |
 | [**Пипка-Буквы**](letters/) | Коровка учится читать: буквы по порядку, звуки сгенерированным голосом, статистика для родителя. |
+| [**Пипка-Феерия**](feerie/) | Туннель, который снится сам себе: мандалы с прорезями, ноты-бусины, а проигрыш называется рассветом. |
 
 ## Документация
 
@@ -71,4 +72,5 @@ DIVERGENCE: ██████ (WITHIN-TOLERANCE)
 
 AI wrote the games. Human applied pressure. Pressure measured in px/s.
 Synthetic voice rated "vile". Replaced. Re-rating pending.
+Psychedelia rendered at 544×300. Upscaled by CSS. Not yet heard.
 ```

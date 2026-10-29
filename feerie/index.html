@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Пипка-Феерия</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: шапка с сиянием и счётом, поле на всю оставшуюся высоту, полоса настройки снизу */
+:root{
+  --ink:#090b0f; --panel:#12161c; --carbon:#191e25; --line:#262f3a;
+  --fg:#d9e0e8; --dim:#78848f; --red:#e4322b; --amber:#f0b429; --green:#58d68d; --ice:#7fd8ff; --mag:#ff5fd2;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0; background:var(--ink); color:var(--fg); font-family:var(--sans);
+  display:flex; flex-direction:column; overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:10px 12px; gap:8px;
+}
+.hud{display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-family:var(--mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim)}
+.hud b{display:block; font-size:17px; font-weight:600; letter-spacing:.02em; color:var(--fg); font-variant-numeric:tabular-nums}
+.hud .brand{font-weight:600; letter-spacing:.18em; background:linear-gradient(90deg,#ff5fd2,#f0b429,#58d68d,#7fd8ff,#b48cff); -webkit-background-clip:text; background-clip:text; color:transparent}
+.hud .spacer{flex:1 1 auto; min-width:0}
+.glow{min-width:150px}
+.glow .meter{position:relative; height:9px; margin-top:6px; border:1px solid var(--line); border-radius:2px; background:#0d1015; overflow:hidden}
+.glow .fill{position:absolute; inset:0 auto 0 0; width:70%; background:linear-gradient(90deg,#e4322b,#ff5fd2,#b48cff,#7fd8ff,#58d68d,#f0b429); transition:width .15s linear}
+.glow.low .meter{border-color:var(--red)}
+.hud .lvl b{font-size:13px; letter-spacing:.06em; text-transform:none; max-width:26ch; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#field{position:relative; flex:1 1 auto; min-height:0; border:1px solid var(--line); border-radius:3px; background:#000; overflow:hidden}
+#field canvas{position:absolute; left:0; top:0; display:block}
+#field .buf{width:100%; height:100%}
+/* Индикатор пипки */
+.stick{position:absolute; left:10px; bottom:10px; width:74px; padding:6px 6px 4px; background:rgba(10,13,18,.78); border:1px solid var(--line); border-radius:3px; font-family:var(--mono); font-size:9px; letter-spacing:.12em; color:var(--dim); text-align:center}
+.stick .box{position:relative; width:60px; height:60px; margin:3px auto 4px; border:1px solid var(--line); border-radius:50%; background:
+  linear-gradient(to right,transparent 49%,var(--line) 49%,var(--line) 51%,transparent 51%),
+  linear-gradient(to bottom,transparent 49%,var(--line) 49%,var(--line) 51%,transparent 51%)}
+.stick .dot{position:absolute; left:50%; top:50%; width:11px; height:11px; margin:-5.5px 0 0 -5.5px; border-radius:50%; background:var(--red); box-shadow:0 0 9px rgba(228,50,43,.85)}
+.stick .rate{color:var(--amber)}
+.stick .br{margin-top:2px; color:var(--line)}
+.stick .br.on{color:var(--ice)}
+/* Оверлеи полупрозрачные: за ними летит автопилот, это и есть заставка */
+.ov{position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; text-align:center; background:radial-gradient(ellipse at center,rgba(5,7,12,.82) 0,rgba(5,7,12,.6) 70%,rgba(5,7,12,.35) 100%); padding:20px; overflow:auto}
+.ov h1{margin:0; font-family:var(--mono); font-size:clamp(24px,6vw,40px); font-weight:600; letter-spacing:.2em; text-transform:uppercase; text-wrap:balance}
+.ov h1 span{background:linear-gradient(90deg,#ff5fd2,#f0b429,#58d68d,#7fd8ff,#b48cff); -webkit-background-clip:text; background-clip:text; color:transparent}
+.ov h2{margin:0; font-family:var(--mono); font-size:clamp(18px,4.5vw,26px); font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--amber)}
+.ov p{margin:0; max-width:52ch; font-size:13.5px; line-height:1.65; color:#c3ccd5}
+.ov p b{color:var(--ice); font-weight:600}
+.ov ul{margin:0; padding:0; list-style:none; display:grid; gap:7px; font-family:var(--mono); font-size:12px; color:#c3ccd5; text-align:left}
+.ov ul b{color:var(--amber); font-weight:500}
+.ov .warn{font-size:11.5px; color:#d79a94; max-width:56ch}
+.btn{font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:#fff; background:var(--red); border:0; border-radius:3px; padding:11px 22px; cursor:pointer}
+.btn:hover{background:#f2473f}
+.btn:focus-visible{outline:2px solid var(--amber); outline-offset:2px}
+.ghost{background:transparent; color:var(--dim); border:1px solid var(--line)}
+.ghost:hover{background:var(--carbon); color:var(--fg)}
+.final{display:flex; gap:22px; flex-wrap:wrap; justify-content:center; font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+.final b{display:block; font-size:21px; color:var(--fg); font-variant-numeric:tabular-nums}
+.bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+.bar input[type=range]{flex:1 1 150px; min-width:110px; accent-color:var(--red); height:18px}
+.bar .val{color:var(--amber); font-variant-numeric:tabular-nums; min-width:62px}
+.bar .tip{flex:1 1 100%; text-transform:none; letter-spacing:0; font-family:var(--sans); font-size:11.5px; color:#5f6a75}
+@media (prefers-reduced-motion:reduce){.glow .fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="hud">
+  <div class="brand" data-i18n="brand">Пипка-Феерия</div>
+  <div class="glow" id="hGlowBox"><span data-i18n="glow">Сияние</span><div class="meter"><div class="fill" id="hGlow"></div></div></div>
+  <div><span data-i18n="score">Счёт</span><b id="hScore">0</b></div>
+  <div><span data-i18n="chain">Цепь</span><b id="hChain">0</b></div>
+  <div class="lvl"><span data-i18n="depth">Глубина</span><b id="hLvl">1</b></div>
+  <div class="spacer"></div>
+  <div><span data-i18n="rec">Рекорд</span><b id="hBest">0</b></div>
+</div>
+
+<div id="field">
+  <canvas class="buf" id="buf0"></canvas>
+  <canvas class="buf" id="buf1" style="visibility:hidden"></canvas>
+  <canvas id="cv"></canvas>
+  <div class="stick" aria-hidden="true">
+    <span data-i18n="nub">Пипка</span>
+    <div class="box"><div class="dot" id="dot"></div></div>
+    <div class="rate"><span id="rate">0</span> px/s</div>
+    <div class="br" id="brOut" data-i18n="breath">Вдох</div>
+  </div>
+
+  <div class="ov" id="ovStart">
+    <h1 data-i18n-html="titleH">Пипка-<span>Феерия</span></h1>
+    <p data-i18n-html="intro"></p>
+    <ul>
+      <li data-i18n-html="k1"></li>
+      <li data-i18n-html="k2"></li>
+      <li data-i18n-html="k3"></li>
+      <li data-i18n-html="k4"></li>
+    </ul>
+    <button class="btn" id="btnStart" data-i18n="startBtn">Нырнуть</button>
+    <p class="warn" data-i18n="warn"></p>
+  </div>
+
+  <div class="ov" id="ovPause" hidden>
+    <h2 data-i18n="pauseH">Пауза</h2>
+    <p data-i18n="pauseP"></p>
+    <button class="btn" id="btnResume" data-i18n="resume">Продолжить</button>
+  </div>
+
+  <div class="ov" id="ovOver" hidden>
+    <h2 data-i18n="overH">Рассвет</h2>
+    <div class="final">
+      <div><span data-i18n="score">Счёт</span><b id="fScore">0</b></div>
+      <div><span data-i18n="depth">Глубина</span><b id="fLvl">0</b></div>
+      <div><span data-i18n="notes">Нот</span><b id="fNotes">0</b></div>
+      <div><span data-i18n="bestChain">Лучшая цепь</span><b id="fChain">0</b></div>
+    </div>
+    <p id="fNote"></p>
+    <button class="btn" id="btnAgain" data-i18n="again">Ещё раз</button>
+  </div>
+</div>
+
+<div class="bar">
+  <label for="sens" data-i18n="sensL">Чувствительность пипки</label>
+  <input type="range" id="sens" min="120" max="1200" step="20" value="380">
+  <span class="val" id="sensVal">380 px/s</span>
+  <button class="btn ghost" id="btnMute" type="button">Звук: вкл</button>
+  <button class="btn ghost" id="btnMusic" type="button">Музыка: вкл</button>
+  <button class="btn ghost" id="btnCalm" type="button">Мягко: выкл</button>
+  <button class="btn ghost" id="btnLang" type="button">EN</button>
+  <a class="btn ghost" href="../index.html" data-i18n="allGames" style="text-decoration:none;display:inline-block">Все игры</a>
+  <span class="tip" id="tip" data-i18n="tip"></span>
+</div>
+
+<script>
+(function(){
+"use strict";
+var el=function(id){return document.getElementById(id)};
+var cv=el('cv'), ctx=cv.getContext('2d');
+var field=el('field');
+var ovStart=el('ovStart'), ovPause=el('ovPause'), ovOver=el('ovOver');
+var dot=el('dot'), rateOut=el('rate'), brOut=el('brOut');
+
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
+var num=function(s,d){ var n=parseFloat(s); return isFinite(n)?n:d; };
+
+/* Скорость кометы прямо пропорциональна нажиму, как корабль в данмаку, поэтому и порог
+   полного отклонения тот же: уклоняются тычками, а не долгим давлением */
+var sens=num(store('pipka.feerie.sens'),380);
+var muted=store('pipka.mute')==='1';
+var musicOn=store('pipka.feerie.music')!=='0';
+var calmS=store('pipka.feerie.calm');
+var calm=calmS===null ? !!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) : calmS==='1';
+var best=num(store('pipka.feerie.best'),0)||0;
+
+/* ======================= ЯЗЫК ======================= */
+var TXT={
+ru:{brand:'Пипка-Феерия', titleH:'Пипка-<span>Феерия</span>',
+ glow:'Сияние', score:'Счёт', chain:'Цепь', depth:'Глубина', rec:'Рекорд', notes:'Нот', bestChain:'Лучшая цепь',
+ nub:'Пипка', breath:'Вдох',
+ intro:'Ты — <b>искра</b> в туннеле, который снится сам себе. Навстречу летят мандалы с прорезями: проскользни в прорезь. Бусины света — это <b>ноты</b>: собираешь их — играешь мелодию. Всё держится на <b>сиянии</b>: оно гаснет само, его питают ноты и пройденные стены, а удар о стену отнимает заметный кусок, и чем глубже, тем больше. Погаснет — наступит рассвет.',
+ k1:'<b>пипка</b> — полёт в сечении туннеля: сильнее давишь, быстрее летишь; искра разгоняется и тормозит не сразу',
+ k2:'<b>левая кнопка</b> или <b>Shift</b> — вдох: мир замедляется, сияние тратится',
+ k3:'<b>красное кольцо</b> на ближайшей стене — куда ты в неё попадёшь; <b>белое</b> — мимо',
+ k4:'<b>Esc</b> — пауза, <b>стрелки</b> — запасное управление',
+ startBtn:'Нырнуть',
+ warn:'Осторожно: цвет и вращение во весь экран. Если от такого нехорошо — включи «Мягко» внизу.',
+ pauseH:'Пауза', pauseP:'Курсор отпущен. Туннель подождёт.', resume:'Продолжить',
+ overH:'Рассвет', again:'Ещё раз',
+ n0:'Сияние погасло, не успев разгореться. Нажим лёгкий, тычками — комета разгоняется быстро.',
+ n1:'Смотри на кольцо на ближайшей стене: красное — удар, белое — проскочишь.',
+ n2:'Ты видел, как туннель меняет цвет. Дальше он меняет и лад.',
+ n3:'Глубоко. Мелодия, которую ты собрал, нигде больше не звучала.',
+ n4:'Ниже уже только ноосфера. Или выше. Отсюда не разобрать.',
+ sensL:'Чувствительность пипки', allGames:'Все игры',
+ tip:'Если комета срывается с места от касания — тащи ползунок вправо. «Мягко» укорачивает шлейфы и почти останавливает закрутку, а цвета не тускнеют вместе с сиянием, только музыка.',
+ snd:'Звук', mus:'Музыка', calm:'Мягко', on:'вкл', off:'выкл',
+ go:'Ныряем', lvlB:'Глубина',
+ L:['Мармеладный коридор','Сад часов','Лимонадный собор','Калейдоскопный базар','Лес светлячков','Море мандал','Четвёртое измерение','Небесная пипка','Ноосфера'],
+ more:'ещё глубже'},
+en:{brand:'Pipka Féerie', titleH:'Pipka <span>Féerie</span>',
+ glow:'Glow', score:'Score', chain:'Chain', depth:'Depth', rec:'Best', notes:'Notes', bestChain:'Best chain',
+ nub:'Pipka', breath:'Breath',
+ intro:'You are a <b>spark</b> in a tunnel that is dreaming itself. Mandalas with slits fly at you: slip through the slit. The beads of light are <b>notes</b>: collect them and you play the tune. Everything runs on <b>glow</b>: it fades by itself, notes and cleared walls feed it, and hitting a wall takes a good chunk, more the deeper you are. When it goes out, dawn breaks.',
+ k1:'<b>pipka</b> — flight across the tunnel: push harder, fly faster; the spark speeds up and slows down with a lag',
+ k2:'<b>left button</b> or <b>Shift</b> — breath: the world slows, glow is spent',
+ k3:'a <b>red ring</b> on the nearest wall is where you will hit it; <b>white</b> means you pass',
+ k4:'<b>Esc</b> — pause, <b>arrows</b> — fallback controls',
+ startBtn:'Dive',
+ warn:'Caution: colour and rotation across the whole screen. If that is not good for you, switch on “Calm” below.',
+ pauseH:'Paused', pauseP:'The pointer is released. The tunnel will wait.', resume:'Resume',
+ overH:'Dawn', again:'Again',
+ n0:'The glow went out before it caught. Light pressure, in nudges: the spark picks up speed fast.',
+ n1:'Watch the ring on the nearest wall: red is a hit, white is a pass.',
+ n2:'You saw the tunnel change colour. Further down it changes key, too.',
+ n3:'Deep. The tune you collected has never sounded anywhere else.',
+ n4:'Below this there is only the noosphere. Or above. Hard to tell from here.',
+ sensL:'Pipka sensitivity', allGames:'All games',
+ tip:'If the spark bolts at a touch, drag the slider right. “Calm” shortens the trails and nearly stops the swirl, and the colours stop fading with the glow — only the music does.',
+ snd:'Sound', mus:'Music', calm:'Calm', on:'on', off:'off',
+ go:'Diving', lvlB:'Depth',
+ L:['Marmalade Corridor','Garden of Clocks','Lemonade Cathedral','Kaleidoscope Bazaar','Firefly Forest','Sea of Mandalas','The Fourth Dimension','Pipka Celestial','The Noosphere'],
+ more:'deeper still'}};
+var LANG=store('pipka.lang')||(((navigator.language||'ru').slice(0,2)==='ru')?'ru':'en');
+function tr(k){ var d=TXT[LANG]||TXT.ru; return d[k]!==undefined?d[k]:(TXT.ru[k]!==undefined?TXT.ru[k]:k); }
+function lvlName(l){ var L=tr('L'); return l<L.length ? L[l] : L[L.length-1]+' +'+(l-L.length+1); }
+function applyLang(){
+  document.documentElement.lang=LANG;
+  var i, els=document.querySelectorAll('[data-i18n]');
+  for(i=0;i<els.length;i++) els[i].textContent=tr(els[i].getAttribute('data-i18n'));
+  els=document.querySelectorAll('[data-i18n-html]');
+  for(i=0;i<els.length;i++) els[i].innerHTML=tr(els[i].getAttribute('data-i18n-html'));
+  els=document.querySelectorAll('[data-i18n-title]');
+  for(i=0;i<els.length;i++) els[i].title=tr(els[i].getAttribute('data-i18n-title'));
+  document.title=tr('brand');
+  var lb=el('btnLang'); if(lb) lb.textContent=(LANG==='ru'?'EN':'RU');
+  drawButtons(); hudT=1; hud(0);
+}
+
+/* ======================= ПОЛЕ ======================= */
+/* Мир рисуется в буфер пониженного разрешения (высота 200–300 px), и этот буфер сам
+   стоит на странице — растягивает его CSS. Буфер каждый кадр рисуется сам в себя с
+   увеличением и поворотом (обратная связь, как в Milkdrop), поэтому буферов два и они
+   меняются местами. Замер на программной растеризации, поле 1248×688: растянуть буфер
+   726×400 на холст через drawImage со сглаживанием — 12 мс, обратная связь — 9 мс, весь
+   кадр 26 мс. Комета, метка и надписи рисуются поверх, в прозрачном холсте полного
+   разрешения: они должны быть чёткими */
+var W=600,H=400,DPR=1, LW=480, LH=300, LCX=240, LCY=150, LRS=140, BS=1;
+var BA=el('buf0'), BB=el('buf1');
+var cur=BA, nxt=BB;
+function resize(){
+  var r=field.getBoundingClientRect();
+  W=Math.max(260,Math.round(r.width)); H=Math.max(220,Math.round(r.height));
+  DPR=Math.min(1.5, window.devicePixelRatio||1);
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  LH=Math.max(200,Math.min(300,Math.round(H*0.45))); LW=Math.round(LH*W/H);
+  BA.width=BB.width=LW; BA.height=BB.height=LH;
+  LCX=LW/2; LCY=LH/2; LRS=Math.min(LW,LH)*0.46; BS=cv.width/LW;
+}
+window.addEventListener('resize',function(){ resize(); });
+
+/* Сечение туннеля — круг радиуса 1, комета живёт в нём. Камера стоит на D позади
+   плоскости кометы, поэтому предмет на глубине z виден в масштабе D/(D+z): плоскость
+   кометы — ровно круг экрана, дальний конец (ZFAR) — точка размером в 3.5% */
+var D=1.0, ZFAR=28;
+function pf(z){ return D/(D+z); }
+/* туннель изгибается только картинкой: смещение растёт с глубиной и равно нулю в
+   плоскости кометы, так что на столкновения изгиб не влияет */
+function bx(z){ return (1-pf(z))*G.bendX*LRS; }
+function by(z){ return (1-pf(z))*G.bendY*LRS; }
+
+/* ======================= СПРАЙТЫ ======================= */
+/* Бусины и искры рисуются сотнями — светящийся шарик запекается на 12 оттенков
+   × 4 насыщенности один раз, дальше только drawImage */
+var SPR=[], SPRN=12;
+function bakeSprites(){
+  for(var s=0;s<4;s++){ SPR[s]=[];
+    for(var h=0;h<SPRN;h++){
+      var c=document.createElement('canvas'); c.width=c.height=48; var g=c.getContext('2d');
+      var sat=[18,45,75,100][s], hue=h*360/SPRN;
+      var gr=g.createRadialGradient(24,24,0,24,24,24);
+      gr.addColorStop(0,'rgba(255,255,255,1)');
+      gr.addColorStop(0.18,'hsla('+hue+','+sat+'%,85%,1)');
+      gr.addColorStop(0.45,'hsla('+hue+','+sat+'%,60%,.45)');
+      gr.addColorStop(1,'hsla('+hue+','+sat+'%,50%,0)');
+      g.fillStyle=gr; g.fillRect(0,0,48,48); SPR[s][h]=c;
+    }
+  }
+}
+function spr(hue){ var s=Math.max(0,Math.min(3,Math.round(G.sat*3))); return SPR[s][((Math.round(hue/30)%SPRN)+SPRN)%SPRN]; }
+
+/* ======================= ЗВУК ======================= */
+var AC=null, master=null, sfx=null, mus=null, musLP=null, dly=null, dlyFb=null, noiseBuf=null;
+function at(p,v,tc){ if(!AC) return; try{ p.setTargetAtTime(v,AC.currentTime,tc); }catch(e){ p.value=v; } }
+function initAudio(){
+  if(AC) return;
+  try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; return; }
+  master=AC.createGain(); master.gain.value=muted?0:1;
+  var comp=AC.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
+  master.connect(comp); comp.connect(AC.destination);
+  sfx=AC.createGain(); sfx.gain.value=0.8; sfx.connect(master);
+  /* музыка идёт через ФНЧ, и его срез привязан к сиянию: гаснет сияние — музыка
+     глохнет, как из-под воды. Удар о стену роняет срез до 260 Гц */
+  musLP=AC.createBiquadFilter(); musLP.type='lowpass'; musLP.frequency.value=6000; musLP.Q.value=0.8;
+  mus=AC.createGain(); mus.gain.value=musicOn?0.5:0; mus.connect(musLP); musLP.connect(master);
+  /* эхо на три шестнадцатых — на нём держатся арпеджио и ноты-бусины */
+  dly=AC.createDelay(1.5); dlyFb=AC.createGain(); dlyFb.gain.value=0.42;
+  var dOut=AC.createGain(); dOut.gain.value=0.5;
+  dly.connect(dlyFb); dlyFb.connect(dly); dly.connect(dOut); dOut.connect(master);
+  var n=AC.sampleRate, b=AC.createBuffer(1,n,n), d=b.getChannelData(0);
+  for(var i=0;i<n;i++) d[i]=Math.random()*2-1;
+  noiseBuf=b;
+}
+function tone(f0,f1,dur,type,vol,dest,t,att,send,det){
+  if(!AC) return;
+  t=t||AC.currentTime; att=att||0.005;
+  var o=AC.createOscillator(), g=AC.createGain();
+  o.type=type; o.frequency.setValueAtTime(f0,t);
+  if(f1!==f0) o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  if(det) o.detune.value=det;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol,t+att);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(dest);
+  if(send && dly){ var s=AC.createGain(); s.gain.value=send; g.connect(s); s.connect(dly); }
+  o.start(t); o.stop(t+dur+0.05);
+}
+function noise(dur,ft,f0,f1,vol,dest,t,q){
+  if(!AC) return;
+  t=t||AC.currentTime;
+  var s=AC.createBufferSource(); s.buffer=noiseBuf;
+  var f=AC.createBiquadFilter(); f.type=ft; f.Q.value=q||1;
+  f.frequency.setValueAtTime(f0,t); if(f1!==f0) f.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  var g=AC.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(f); f.connect(g); g.connect(dest);
+  s.start(t,Math.random()*0.5); s.stop(t+dur+0.05);
+}
+var mf=function(m){ return 440*Math.pow(2,(m-69)/12); };
+
+/* Лад меняется с глубиной. Аккорд строится через ступень (d, d+2, d+4) прямо в ладу,
+   поэтому в целотонном ладу «Четвёртого измерения» все трезвучия выходят увеличенными —
+   это и есть звук этой глубины. Ноты-бусины берутся из того же лада, так что любая
+   собранная последовательность ложится на гармонию */
+var MODES=[
+  {r:62, m:[0,2,3,5,7,9,10],  p:[0,3,4,0]},   // ре дорийский
+  {r:65, m:[0,2,4,6,7,9,11],  p:[0,1,4,0]},   // фа лидийский
+  {r:60, m:[0,2,4,5,7,9,10],  p:[0,6,3,0]},   // до миксолидийский
+  {r:64, m:[0,1,4,5,7,8,10],  p:[0,1,6,0]},   // ми фригийский доминантовый
+  {r:57, m:[0,2,3,5,7,8,10],  p:[0,5,3,4]},   // ля эолийский
+  {r:63, m:[0,2,3,6,7,8,11],  p:[0,3,5,0]},   // ми-бемоль венгерский минор
+  {r:61, m:[0,2,4,6,8,10],    p:[0,1,2,1]},   // до-диез целотонный
+  {r:66, m:[0,2,4,6,7,9,11],  p:[0,4,1,0]},   // фа-диез лидийский
+  {r:59, m:[0,2,3,5,7,9,10],  p:[0,3,6,4]}    // си дорийский
+];
+function mode(){ return MODES[Math.min(G.lvl,MODES.length-1)]; }
+function deg(md,d){ var n=md.m.length, o=Math.floor(d/n); return md.r+12*o+md.m[((d%n)+n)%n]; }
+var mNext=0, mStep=0;
+function bpm(){ return 100+4*Math.min(G.lvl,8); }
+function musicTick(){
+  if(!AC || G.phase!=='fly') return;
+  var sd=60/bpm()/4, now=AC.currentTime;
+  if(mNext<now) mNext=now+0.05;
+  dly.delayTime.setTargetAtTime(sd*3,now,0.05);
+  while(mNext<now+0.14){ playStep(mStep,mNext,sd); mNext+=sd; mStep++; }
+}
+function playStep(step,tt,sd){
+  var md=mode(), st=step%16, bar=Math.floor(step/16), cd=md.p[bar%md.p.length], lv=G.lvl;
+  var gl=Math.max(0,G.glow)/100;
+  if(st===0){
+    /* пэд: три голоса по две расстроенные пилы, атака медленная — аккорд вплывает */
+    for(var k=0;k<3;k++){ var f=mf(deg(md,cd+2*k)-12);
+      tone(f,f,sd*16*1.15,'sawtooth',0.022,mus,tt,sd*5,0,-7);
+      tone(f,f,sd*16*1.15,'sawtooth',0.022,mus,tt,sd*5,0,7); }
+  }
+  /* бас синкопой: 1, 4+, 3 — «качающийся» ритм, на котором плывёт картинка */
+  if(st===0||st===6||st===10||(lv>=2&&st===14)){
+    var bm=deg(md,cd)-24+(st===10?12:0); tone(mf(bm),mf(bm),sd*2.2,'triangle',0.2,mus,tt,0.008);
+  }
+  /* арпеджио громче, когда сияния больше: это слой «полёта», он гаснет первым */
+  var pat=[0,2,4,7,4,2,0,2, 4,7,9,7,4,2,4,2], ad=cd+pat[st];
+  if(lv>=1||st%2===0) tone(mf(deg(md,ad)+12),mf(deg(md,ad)+12),sd*1.4,'triangle',0.012+0.03*gl,mus,tt,0.004,0.5);
+  var kick=(st===0||st===8||(lv>=1&&(st===4||st===12)));
+  if(kick){ tone(140,42,0.16,'sine',0.32,mus,tt); kicks.push(tt); }
+  if(st%4===2) noise(0.05,'highpass',7500,7500,0.06,mus,tt);
+  if(lv>=2&&st%2===1) noise(0.02,'highpass',9000,9000,0.025,mus,tt);
+  if(lv>=3&&(st===4||st===12)) noise(0.16,'bandpass',1500,900,0.12,mus,tt,0.9);
+  if(st===0&&bar%4===0) noise(1.2,'highpass',4000,9000,0.035,mus,tt);
+}
+var kicks=[];
+var snd={
+  note:function(m){ if(!AC||G.demo) return; var f=mf(m);
+    tone(f,f,0.5,'sine',0.13,sfx,0,0.004,0.55); tone(f*2,f*2,0.25,'triangle',0.035,sfx,0,0.003,0.4); },
+  pass:function(){ if(!AC||G.demo) return; noise(0.28,'bandpass',2600,500,0.06,sfx,0,2); },
+  hit:function(){ if(!AC||G.demo) return;
+    tone(120,38,0.7,'sawtooth',0.2,sfx,0,0.005,0,-30); tone(123,40,0.7,'sawtooth',0.2,sfx,0,0.005,0,30);
+    noise(0.5,'lowpass',2000,120,0.4,sfx);
+    if(musLP){ musLP.frequency.cancelScheduledValues(AC.currentTime); musLP.frequency.setTargetAtTime(260,AC.currentTime,0.02); lastCut=0; } },
+  level:function(){ if(!AC||G.demo) return; var md=mode();
+    tone(300,1500,1.2,'sine',0.08,sfx,0,0.3,0.5);
+    for(var k=0;k<4;k++){ var m=deg(md,2*k)+12; tone(mf(m),mf(m),1.6,'triangle',0.05,sfx,AC.currentTime+0.12*k,0.01,0.6); } },
+  start:function(){ if(!AC) return; tone(80,800,0.9,'sine',0.12,sfx,0,0.4,0.4); noise(1.0,'bandpass',300,4000,0.08,sfx,0,3); }
+};
+
+/* ======================= ВВОД ======================= */
+var stick={x:0,y:0,rate:0};
+var accX=0, accY=0, keys={}, btnBreath=false, botStick=null;
+document.addEventListener('mousemove',function(e){
+  if(G.phase!=='fly') return;
+  accX+=e.movementX||0; accY+=e.movementY||0;
+},{passive:true});
+document.addEventListener('mousedown',function(e){
+  if(G.phase!=='fly'||!document.pointerLockElement) return;
+  if(e.button===0) btnBreath=true;
+});
+document.addEventListener('mouseup',function(e){ if(e.button===0) btnBreath=false; });
+cv.addEventListener('contextmenu',function(e){ e.preventDefault(); });
+window.addEventListener('keydown',function(e){
+  var k=e.key;
+  if(k==='ArrowLeft'){keys.l=1;e.preventDefault()}
+  else if(k==='ArrowRight'){keys.r=1;e.preventDefault()}
+  else if(k==='ArrowUp'){keys.u=1;e.preventDefault()}
+  else if(k==='ArrowDown'){keys.d=1;e.preventDefault()}
+  else if(k==='Shift'){keys.b=1}
+  else if(k==='Escape'&&G.phase==='fly'){ pause(); }
+  else if((k===' '||k==='Enter')&&G.phase!=='fly'){ e.preventDefault(); if(G.phase==='pause') resume(); else start(); }
+});
+window.addEventListener('keyup',function(e){
+  var k=e.key;
+  if(k==='ArrowLeft')keys.l=0; else if(k==='ArrowRight')keys.r=0;
+  else if(k==='ArrowUp')keys.u=0; else if(k==='ArrowDown')keys.d=0;
+  else if(k==='Shift')keys.b=0;
+});
+/* τ = 65 мс, как в данмаку: стены приходят через полсекунды, нужен отклик, а не плавность */
+function readStick(dt){
+  var rx=accX/dt, ry=accY/dt; accX=0; accY=0;
+  stick.rate=Math.round(Math.sqrt(rx*rx+ry*ry));
+  var tx=Math.max(-1,Math.min(1,rx/sens)), ty=Math.max(-1,Math.min(1,ry/sens));
+  if(keys.l||keys.r) tx=(keys.r?1:0)-(keys.l?1:0);
+  if(keys.u||keys.d) ty=(keys.d?1:0)-(keys.u?1:0);
+  var a=1-Math.exp(-dt/0.065);
+  stick.x+=(tx-stick.x)*a; stick.y+=(ty-stick.y)*a;
+}
+
+/* ======================= МИР ======================= */
+/* VMAX — скорость кометы при полном нажиме, в радиусах туннеля в секунду: поперёк
+   рабочего круга (0.9) за 1.1 с. Первая версия летела 7 м/с со стенами раз в секунду и
+   разгонялась до 14 м/с и стены раз в 0.29 с; живой человек назвал это «слишком быстро».
+   Потом 4.5 м/с и потолок 9 — «ещё чутка медленней». Потом 3.8 м/с с ростом до 7.5 — на
+   четвёртой глубине (5.2 м/с) «я что, пилот истребителя?». Теперь разгон пологий: 3.8 м/с
+   и стена раз в 1.8 с на первой глубине, 4.4 м/с на четвёртой, потолок 5.5 м/с и стена
+   раз в 0.85 с. Сложность с глубиной растёт формой и вращением стен, а не скоростью.
+   WPL — стен на одну глубину: при медленных стенах 24 дают первой глубине ~37 с */
+/* TAU — инерция искры: пипка задаёт скорость, а искра догоняет её с постоянной 0.25 с и
+   после отпускания доскальзывает. Без неё искра стояла как вкопанная и в бусины не
+   попадалось: живой человек попросил «какую-то инерцию». ORBR — радиус сбора бусины:
+   при 0.11 и бусине, рисованной ядром в 0.03, ловилось 20 нот за две глубины; теперь
+   сбор 0.17, а бусина нарисована вдвое крупнее */
+var VMAX=1.6, RMAX=0.9, WPL=24, HITR=0.03, ORBR=0.17, TAU=0.25;
+function speedAt(l){ return Math.min(5.5, 3.8+l*0.2); }
+function spacingAt(l){ return Math.max(4.5, 7-0.3*l); }
+var G={phase:'start', demo:true};
+var S={x:0,y:0,vx:0,vy:0};
+var walls=[], orbs=[], parts=[];
+var LVLHUE=[310,35,185,265,95,200,330,50,160];
+
+function reset(demo){
+  G={phase:G.phase, demo:!!demo, t:0, dist:0, speed:speedAt(0), glow:80, lvl:0, passed:0, hits:0,
+     score:0, chain:0, bestChain:0, notes:0, inv:0, flash:0, pulse:0, slowK:1, breath:0,
+     hue:LVLHUE[0], hueT:LVLHUE[0], sat:1, sym:5, swirl:0, bendX:0, bendY:0, banner:null,
+     genPos:8, gen:0, path:{x:0,y:0}, tgt:{x:0,y:0}, mel:7, beatT:0};
+  S.x=0; S.y=0; S.vx=0; S.vy=0; stick.x=0; stick.y=0;
+  walls.length=0; orbs.length=0; parts.length=0; kicks.length=0;
+  while(G.genPos-G.dist<ZFAR) genWall();
+}
+
+/* ---------- стены ----------
+   Стена задана в той позе, в какой она придёт к комете, а пока летит, повёрнута на
+   k·z: при z = 0 поворот нулевой, и прорезь стоит ровно там, где её поставил генератор,
+   с какой бы скоростью и с какими вдохами ни летели. Твёрдость проверяется функцией
+   solid(x, y) в этой позе; рисуется та же фигура путём с правилом even-odd */
+function angd(a,b){ var d=Math.abs(a-b)%(2*Math.PI); return d>Math.PI?2*Math.PI-d:d; }
+function roseR(w,th){ return 0.14+0.84*Math.pow(Math.abs(Math.cos(w.n*(th-w.ph)/2)),1.4); }
+function solid(w,x,y){
+  var r=Math.sqrt(x*x+y*y), th=Math.atan2(y,x), i;
+  if(r>=1) return false;
+  switch(w.type){
+    case 'iris': for(i=0;i<w.holes.length;i++){ var h=w.holes[i], dx=x-h.x, dy=y-h.y; if(dx*dx+dy*dy<h.r*h.r) return false; } return true;
+    case 'pie': return angd(th,w.th)>w.w/2;
+    case 'groove': return r<w.ri||r>w.ro;
+    case 'spokes': if(r<w.hub) return true;
+      var sec=2*Math.PI/w.n, a=(((th-w.ph)%sec)+sec)%sec; return Math.min(a,sec-a)<w.sw/2;
+    case 'rose': return r<roseR(w,th);
+    case 'checker': var s2=2*Math.PI/w.m, si=Math.floor((((th-w.ph)%(2*Math.PI))+2*Math.PI)%(2*Math.PI)/s2), bi=0;
+      for(i=0;i<w.bands.length;i++) if(r>=w.bands[i]) bi=i+1;
+      return (si+bi+w.flip)%2===0;
+  }
+  return false;
+}
+/* прорезь годится, если вокруг пути есть зазор 0.09 — втрое больше радиуса кометы */
+function clear(w,x,y){
+  if(solid(w,x,y)) return false;
+  for(var i=0;i<8;i++){ var a=i*Math.PI/4; if(solid(w,x+0.09*Math.cos(a),y+0.09*Math.sin(a))) return false; }
+  return true;
+}
+function rnd(a,b){ return a+Math.random()*(b-a); }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function makeWall(type,q,lv){
+  var r=Math.sqrt(q.x*q.x+q.y*q.y), th=Math.atan2(q.y,q.x), w={type:type};
+  switch(type){
+    case 'iris':
+      var hr=Math.max(0.19,0.32-0.013*lv);
+      w.holes=[{x:q.x,y:q.y,r:hr}];
+      /* ложные дыры: смотреть надо на бусины, а не на первую попавшуюся прорезь */
+      var nd=lv<1?0:Math.min(3,1+Math.floor(lv/3));
+      for(var i=0;i<nd*6&&w.holes.length<nd+1;i++){
+        var a=rnd(0,7), rr=rnd(0.15,0.95-hr), cx=rr*Math.cos(a), cy=rr*Math.sin(a), ok=true;
+        for(var j=0;j<w.holes.length;j++){ var hh=w.holes[j]; if(Math.hypot(cx-hh.x,cy-hh.y)<hr*2.3) ok=false; }
+        if(ok) w.holes.push({x:cx,y:cy,r:hr*rnd(0.75,1)});
+      }
+      /* дыра не должна вылезать за край круга, иначе even-odd зальёт её наружную часть */
+      for(i=0;i<w.holes.length;i++){ var ho=w.holes[i], d=Math.hypot(ho.x,ho.y); if(d+ho.r>0.98) ho.r=Math.max(0.12,0.98-d); }
+      break;
+    case 'pie': w.th=th; w.w=Math.max(0.62,1.15-0.05*lv); break;
+    case 'groove': var g=Math.max(0.13,0.19-0.006*lv); w.ri=r-g; w.ro=r+g; break;
+    case 'spokes': w.n=3+Math.floor(Math.random()*Math.min(5,1+lv/2)); var sc=2*Math.PI/w.n;
+      w.ph=th+sc/2; w.sw=sc*rnd(0.35,0.55)*Math.min(1,0.8+lv*0.03); w.hub=0.16; break;
+    case 'rose': w.n=pick([3,4,5,6,7]); w.ph=th+Math.PI/w.n; break;
+    case 'checker': w.m=pick([6,8,10]); w.ph=th-Math.PI/w.m; w.bands=[0.33,0.66];
+      var bq=r<0.33?0:r<0.66?1:2; w.flip=(bq%2===0)?1:0; break;
+  }
+  return w;
+}
+function genWall(){
+  var lv=Math.floor(G.gen/WPL), sp=spacingAt(lv), pos=G.genPos+sp;
+  var dt=sp/speedAt(lv), reach=Math.min(0.9,VMAX*0.55*Math.max(0.15,dt-TAU)); // инерция съедает ~TAU на разгон
+  var p=G.path, q=null, k;
+  /* путь блуждает к цели, которая меняется раз в несколько стен: чистое случайное
+     блуждание топчется на месте, а так змейка бусин тянется через весь туннель */
+  if(G.gen%4===0 || Math.hypot(G.tgt.x-p.x,G.tgt.y-p.y)<0.15){ var ta=rnd(0,7), tr2=rnd(0.2,0.78); G.tgt={x:tr2*Math.cos(ta),y:tr2*Math.sin(ta)}; }
+  for(k=0;k<20&&!q;k++){
+    var dx=G.tgt.x-p.x, dy=G.tgt.y-p.y, dl=Math.hypot(dx,dy)||1, a=Math.atan2(dy,dx)+rnd(-0.9,0.9), l=Math.min(dl,reach)*rnd(0.5,1);
+    var c={x:p.x+l*Math.cos(a), y:p.y+l*Math.sin(a)};
+    if(Math.hypot(c.x,c.y)<=0.78) q=c;
+  }
+  if(!q) q={x:p.x*0.8,y:p.y*0.8};
+  var types=['iris','pie'];
+  if(lv>=1) types.push('groove');
+  if(lv>=2) types.push('spokes');
+  if(lv>=3) types.push('rose');
+  if(lv>=4) types.push('checker');
+  var w=null, rq=Math.hypot(q.x,q.y);
+  for(k=0;k<6&&!w;k++){
+    var ty=pick(types);
+    if((ty==='pie'||ty==='spokes'||ty==='rose')&&rq<0.32) continue;
+    if(ty==='groove'&&rq<0.3) continue;
+    var cand=makeWall(ty,q,lv);
+    if(clear(cand,q.x,q.y)) w=cand;
+  }
+  if(!w) w=makeWall('iris',q,0);
+  w.pos=pos; w.qx=q.x; w.qy=q.y; w.lv=lv;
+  /* вращение растёт с глубиной; до трети стен на первых глубинах стоят */
+  w.k=(Math.random()<Math.max(0.1,0.35-lv*0.04)?0:(Math.random()<0.5?-1:1)*rnd(0.03,0.07+0.012*Math.min(lv,8)));
+  w.hue=(G.gen*23)%360; w.done=false;
+  walls.push(w);
+  /* бусины: по отрезку пути от прошлой прорези к этой, и последняя — прямо в прорези.
+     Мелодия — блуждание по ступеням лада шагом ±1–2, в пределах двух октав */
+  var n=Math.max(2,Math.min(4,Math.round(sp/1.7)));
+  for(k=1;k<=n;k++){
+    var u=k/n, op=G.genPos+sp*u-(k===n?0.05:0);
+    G.mel+=pick([-2,-1,1,1,2]); if(G.mel<2) G.mel=3; if(G.mel>14) G.mel=12;
+    orbs.push({pos:op, x:p.x+(q.x-p.x)*u, y:p.y+(q.y-p.y)*u, d:G.mel, done:false, got:false, ph:Math.random()*7});
+  }
+  G.path=q; G.genPos=pos; G.gen++;
+}
+
+/* ======================= ШАГ ======================= */
+var FIX=1/120;
+function step(dt){
+  G.t+=dt;
+  /* автопилот идёт через тот же фильтр, что и пипка, — иначе бот был бы резвее пальца */
+  if(G.demo||AUTO){ botFly(); var fa=1-Math.exp(-dt/0.065); stick.x+=(botStick.x-stick.x)*fa; stick.y+=(botStick.y-stick.y)*fa; }
+  /* вдох: мир замедляется до 45% за ~0.1 с, комета — нет. Сияние тратится, пока держишь */
+  var wantB=!G.demo&&(btnBreath||keys.b)&&G.glow>1;
+  G.breath=wantB?1:0;
+  G.slowK+=((wantB?0.45:1)-G.slowK)*(1-Math.exp(-dt/0.1));
+  var wdt=dt*G.slowK;
+
+  var ia=1-Math.exp(-dt/TAU);
+  S.vx+=(stick.x*VMAX-S.vx)*ia; S.vy+=(stick.y*VMAX-S.vy)*ia;
+  S.x+=S.vx*dt; S.y+=S.vy*dt;
+  /* о край туннеля искра не отскакивает: наружная составляющая скорости гасится */
+  var sr=Math.hypot(S.x,S.y);
+  if(sr>RMAX){ S.x*=RMAX/sr; S.y*=RMAX/sr; var nx=S.x/RMAX, ny=S.y/RMAX, vn=S.vx*nx+S.vy*ny;
+    if(vn>0){ S.vx-=vn*nx; S.vy-=vn*ny; } }
+
+  G.speed+=(speedAt(G.lvl)-G.speed)*(1-Math.exp(-dt/1.5));
+  G.dist+=G.speed*wdt;
+  while(G.genPos-G.dist<ZFAR) genWall();
+
+  var i, w, o, z;
+  for(i=0;i<walls.length;i++){ w=walls[i]; z=w.pos-G.dist;
+    if(!w.done && z<=0){ w.done=true; wallCross(w); } }
+  while(walls.length && walls[0].pos-G.dist< -0.45) walls.shift();
+  for(i=0;i<orbs.length;i++){ o=orbs[i]; z=o.pos-G.dist;
+    if(!o.done && z<=0){ o.done=true;
+      if(Math.hypot(o.x-S.x,o.y-S.y)<ORBR) collect(o); else if(!G.demo) G.chain=0; } }
+  while(orbs.length && orbs[0].pos-G.dist< -0.3) orbs.shift();
+
+  for(i=parts.length-1;i>=0;i--){ var q=parts[i]; q.life-=dt;
+    if(q.life<=0){ parts.splice(i,1); continue; }
+    q.x+=q.vx*dt; q.y+=q.vy*dt; q.pos+=q.vp*wdt; q.vx*=0.97; q.vy*=0.97; }
+
+  if(!G.demo){
+    /* утечка сияния растёт с глубиной: 1.6/с на первой, 3.2/с с девятой. Стена даёт
+       +2.5, бусина +2…+4 (по длине цепи), вдох −6/с. Удар стоит 12 на первой глубине
+       и дорожает до 20: неподвижный бот при цене 24 и старте с 70 гас за 4 с, на третьей
+       же стене, а живой игрок при 15→26 гас на четвёртой глубине именно от ударов */
+    G.glow-=(1.6+0.2*Math.min(G.lvl,8)+(G.breath?6:0))*dt;
+    if(G.glow>100) G.glow=100;
+    if(G.glow<=0){ G.glow=0; gameOver(); return; }
+  } else G.glow=85;
+  var nl=Math.floor(G.passed/WPL);
+  if(nl!==G.lvl) levelUp(nl);
+
+  /* картинка: оттенок дрейфует и тянется к цвету глубины, насыщенность следует за
+     сиянием (ниже 60 мир начинает выцветать), закрутка обратной связи — за поворотом */
+  G.hueT+=dt*(calm?1.5:4); G.hue+=angDiff(G.hue,G.hueT)*(1-Math.exp(-dt/2));
+  var satT=calm?1:Math.max(0.05,Math.min(1,G.glow/60));
+  G.sat+=(satT-G.sat)*(1-Math.exp(-dt/0.6));
+  var sw=(0.002+0.0005*G.lvl)*Math.sin(G.t*0.21)+stick.x*0.005;
+  G.swirl+=(sw*(calm?0.4:1)-G.swirl)*(1-Math.exp(-dt/0.3));
+  G.bendX=0.35*Math.sin(G.t*0.13)+0.15*Math.sin(G.t*0.31+1);
+  G.bendY=0.3*Math.sin(G.t*0.17+2)+0.12*Math.sin(G.t*0.37);
+  G.sym=5+Math.min(G.lvl,7);
+  if(G.inv>0) G.inv-=dt;
+  if(G.flash>0) G.flash-=dt*2.2;
+  if(G.banner){ G.banner.t-=dt; if(G.banner.t<=0) G.banner=null; }
+  G.pulse*=Math.exp(-dt/0.18);
+  if(!AC||G.demo||!musicOn){ G.beatT+=dt*bpm()/60; if(G.beatT>=1){ G.beatT-=1; G.pulse=1; } }
+}
+function angDiff(a,b){ var d=((b-a)%360+540)%360-180; return d; }
+
+function hitCost(){ return Math.min(20,12+1*G.lvl); }
+function wallCross(w){
+  /* удар засчитывается, если твёрд центр кометы и хотя бы два из четырёх краёв:
+     чиркнуть краем прорези можно */
+  var hit=false;
+  if(solid(w,S.x,S.y)){
+    var c=0; for(var i=0;i<4;i++){ var a=i*Math.PI/2; if(solid(w,S.x+HITR*Math.cos(a),S.y+HITR*Math.sin(a))) c++; }
+    hit=c>=2;
+  }
+  if(G.demo) return;
+  if(hit && G.inv<=0){
+    G.hits++; G.glow-=hitCost(); G.chain=0; G.inv=0.5; G.flash=1; snd.hit();
+    for(var k=0;k<26;k++){ var a2=rnd(0,7), v=rnd(0.4,2.2);
+      parts.push({x:S.x,y:S.y,pos:G.dist+0.05,vx:v*Math.cos(a2),vy:v*Math.sin(a2),vp:G.speed*0.6,life:rnd(0.4,0.9),h:w.hue}); }
+  } else if(!hit){
+    G.passed++; G.glow+=2.5; G.score+=50*(G.lvl+1); snd.pass();
+  } else G.passed++;
+}
+function collect(o){
+  o.got=true;
+  var md=mode(), m=deg(md,o.d)+12;
+  for(var k=0;k<10;k++){ var a=rnd(0,7), v=rnd(0.3,1.1);
+    parts.push({x:o.x,y:o.y,pos:G.dist+0.02,vx:v*Math.cos(a),vy:v*Math.sin(a),vp:G.speed*0.8,life:rnd(0.3,0.6),h:o.d*40}); }
+  if(G.demo) return;
+  G.chain++; G.notes++; if(G.chain>G.bestChain) G.bestChain=G.chain;
+  G.glow+=2+Math.min(G.chain,20)*0.1;
+  G.score+=10*(1+Math.floor(G.chain/5));
+  snd.note(m);
+}
+function levelUp(nl){
+  G.lvl=nl; G.hueT=LVLHUE[nl%LVLHUE.length]+(nl>=LVLHUE.length?40:0);
+  if(G.demo) return;
+  G.banner={t:3.2, a:tr('lvlB')+' '+(nl+1), l:nl};
+  G.glow=Math.min(100,G.glow+10);
+  snd.level();
+}
+
+/* Автопилот: заставка за оверлеями и бот для проверок. Летит к ближайшей ещё не
+   пройденной точке пути (бусине или прорези) с той скоростью, что нужна, чтобы успеть */
+var AUTO=false, BOTERR=0;
+function botFly(){
+  var tg=null, tz=0, i;
+  for(i=0;i<orbs.length;i++){ var o=orbs[i]; if(!o.done){ tg=o; tz=o.pos-G.dist; break; } }
+  if(!tg){ botStick={x:0,y:0}; return; }
+  var tt=Math.max(0.12,tz/Math.max(1,G.speed*G.slowK));
+  /* с инерцией: за время tt при команде u из скорости v искра сместится на
+     u·tt + (v−u)·TAU·(1−e^(−tt/TAU)); отсюда u, которая приведёт точно в цель */
+  var e=TAU*(1-Math.exp(-tt/TAU)), den=Math.max(0.05,tt-e);
+  var vx=(tg.x-S.x-S.vx*e)/den, vy=(tg.y-S.y-S.vy*e)/den;
+  var sx=Math.max(-1,Math.min(1,vx/VMAX)), sy=Math.max(-1,Math.min(1,vy/VMAX));
+  if(BOTERR){ sx+=BOTERR*Math.sin(G.t*1.7); sy+=BOTERR*Math.cos(G.t*1.3); }
+  botStick={x:sx,y:sy};
+}
+
+/* ======================= КАРТИНКА ======================= */
+/* насыщенность не выше 70%: чистые 100% с наложением 'lighter' и обратной связью
+   складывались в неон, который живой человек назвал «глазовыжигательным» */
+function hsl(h,s,l,a){ return 'hsla('+(((h%360)+360)%360).toFixed(0)+','+(s*70).toFixed(0)+'%,'+l+'%,'+a.toFixed(3)+')'; }
+function fog(z){ return Math.max(0,Math.min(1,(ZFAR-z)/9))*(z<0?Math.max(0,1+z/0.45):1); }
+
+/* edges — только края прорезей, без внешнего круга: обведённый край туннеля читался
+   как ещё одна дырка */
+function wallPath(c,w,edges){
+  var i, a;
+  switch(w.type){
+    case 'iris': if(!edges) c.arc(0,0,1,0,2*Math.PI);
+      for(i=0;i<w.holes.length;i++){ var h=w.holes[i]; c.moveTo(h.x+h.r,h.y); c.arc(h.x,h.y,h.r,0,2*Math.PI); } break;
+    case 'pie': if(edges){ c.moveTo(Math.cos(w.th+w.w/2),Math.sin(w.th+w.w/2)); c.lineTo(0,0); c.lineTo(Math.cos(w.th-w.w/2),Math.sin(w.th-w.w/2)); break; }
+      c.moveTo(0,0); c.arc(0,0,1,w.th+w.w/2,w.th-w.w/2+2*Math.PI); c.closePath(); break;
+    case 'groove': if(w.ri>0){ c.moveTo(w.ri,0); c.arc(0,0,w.ri,0,2*Math.PI); }
+      if(w.ro<0.99){ if(!edges){ c.moveTo(1,0); c.arc(0,0,1,0,2*Math.PI); } c.moveTo(w.ro,0); c.arc(0,0,w.ro,0,2*Math.PI); } break;
+    case 'spokes': c.moveTo(w.hub,0); c.arc(0,0,w.hub,0,2*Math.PI);
+      for(i=0;i<w.n;i++){ a=w.ph+i*2*Math.PI/w.n;
+        c.moveTo(w.hub*Math.cos(a-w.sw/2),w.hub*Math.sin(a-w.sw/2));
+        c.arc(0,0,1,a-w.sw/2,a+w.sw/2); c.arc(0,0,w.hub,a+w.sw/2,a-w.sw/2,true); c.closePath(); } break;
+    case 'rose': for(i=0;i<=120;i++){ a=i*2*Math.PI/120; var r=roseR(w,a);
+        if(i===0) c.moveTo(r*Math.cos(a),r*Math.sin(a)); else c.lineTo(r*Math.cos(a),r*Math.sin(a)); } c.closePath(); break;
+    case 'checker': var s2=2*Math.PI/w.m, B=[0].concat(w.bands,[1]);
+      for(var bi=0;bi<3;bi++) for(var si=0;si<w.m;si++){ if((si+bi+w.flip)%2!==0) continue;
+        var a0=w.ph+si*s2, a1=a0+s2;
+        if(B[bi]===0){ c.moveTo(0,0); c.arc(0,0,B[1],a0,a1); c.closePath(); }
+        else { c.moveTo(B[bi]*Math.cos(a0),B[bi]*Math.sin(a0)); c.arc(0,0,B[bi+1],a0,a1); c.arc(0,0,B[bi],a1,a0,true); c.closePath(); } } break;
+  }
+}
+/* Стены рисуются в чёткий верхний слой, а не в буфер с обратной связью: в буфере их
+   шлейфы ложились концентрическими копиями прямо на прорезь, и живой человек сказал, что
+   «дырки не видно». Твёрдое — тёмная шторка, гасящая туннель за ней, прорезь — окно в
+   светлый туннель с яркой каймой. Ближайшая стена плотнее всех: её и надо читать */
+function drawWall(c,w,k,next){
+  var z=w.pos-G.dist, f=pf(z), A=fog(z); if(A<=0.01) return;
+  var R=LRS*f*k, near=Math.max(0,Math.min(1,1-z/16));
+  c.save(); c.translate((LCX+bx(z))*k,(LCY+by(z))*k); c.rotate(w.k*z); c.scale(R,R);
+  c.beginPath(); wallPath(c,w,false);
+  var h=G.hue+w.hue*0.35;
+  c.fillStyle=hsl(h,G.sat*0.8,32,A*((next?0.35:0.12)+(next?0.25:0.2)*near)); c.fill('evenodd');
+  c.beginPath(); wallPath(c,w,true);
+  c.lineWidth=(next?(2+3*f):(0.8+1.2*f))*DPR/R; c.lineJoin='round';
+  c.strokeStyle=next?'rgba(255,255,255,'+(A*0.9).toFixed(3)+')':hsl(h+40,G.sat,62,A*0.5); c.stroke();
+  c.restore();
+}
+function drawTunnel(c){
+  var stp=2, off=G.dist%stp, z, f;
+  /* кольца туннеля: цвет зависит от абсолютной глубины, так что радуга едет навстречу */
+  c.lineWidth=1;
+  for(z=stp-off; z<ZFAR; z+=stp){ f=pf(z); var A=fog(z)*0.3;
+    c.beginPath(); c.arc(LCX+bx(z),LCY+by(z),LRS*f,0,2*Math.PI);
+    c.lineWidth=0.6+2.4*f; c.strokeStyle=hsl(G.hue+(G.dist+z)*9,G.sat,60,A); c.stroke(); }
+  /* рельсы-спирали по числу симметрии; закрутка привязана к пройденному пути */
+  var N=G.sym, tw=0.09*(G.lvl%2?-1:1);
+  for(var k=0;k<N;k++){
+    c.beginPath();
+    for(var j=0;j<=12;j++){ z=ZFAR*(j/12)*(j/12); f=pf(z);
+      var a=k*2*Math.PI/N+tw*(z+G.dist), x=LCX+bx(z)+Math.cos(a)*LRS*f, y=LCY+by(z)+Math.sin(a)*LRS*f;
+      if(j===0) c.moveTo(x,y); else c.lineTo(x,y); }
+    c.lineWidth=1; c.strokeStyle=hsl(G.hue+k*360/N,G.sat,55,0.2); c.stroke();
+  }
+}
+/* мандала в точке схода: звезда о G.sym лучах. Обратная связь тянет её к краям экрана,
+   и каждый удар бочки выдувает новый слой — так и получается «цветение» */
+function drawMandala(c){
+  var z=ZFAR*0.85, x=LCX+bx(z), y=LCY+by(z), N=G.sym, p=G.pulse*(calm?0.3:1);
+  var R=LRS*(0.05+0.05*p), r=R*(0.38+0.2*Math.sin(G.t*1.3));
+  c.save(); c.translate(x,y); c.rotate(G.t*0.15*(G.lvl%2?-1:1));
+  c.beginPath();
+  for(var i=0;i<=2*N;i++){ var a=i*Math.PI/N, rr=i%2?r:R; if(i===0) c.moveTo(rr,0); else c.lineTo(rr*Math.cos(a),rr*Math.sin(a)); }
+  c.closePath(); c.fillStyle=hsl(G.hue+180+G.t*8,G.sat,50,0.2+0.15*p); c.fill();
+  c.lineWidth=1; c.strokeStyle=hsl(G.hue+G.t*8,G.sat,65,0.5); c.stroke();
+  c.restore();
+}
+function drawBall(c,x,y,s,hue,a){
+  if(s<0.6) return;
+  c.globalAlpha=Math.min(1,a); c.drawImage(spr(hue),x-s,y-s,2*s,2*s); c.globalAlpha=1;
+}
+
+/* бусина в чётком слое: тёмная подложка, цветной ореол, белое ядро с тёмной обводкой —
+   читается на любом цвете туннеля */
+function drawBead(c,x,y,s,hue,a){
+  if(s<1) return;
+  c.globalAlpha=Math.min(1,a);
+  c.fillStyle='rgba(0,0,0,.5)'; c.beginPath(); c.arc(x,y,s*0.6,0,2*Math.PI); c.fill();
+  c.drawImage(spr(hue),x-s,y-s,2*s,2*s);
+  c.beginPath(); c.arc(x,y,Math.max(1.5,s*0.3),0,2*Math.PI);
+  c.fillStyle='#fff'; c.fill(); c.lineWidth=Math.max(1,s*0.08); c.strokeStyle='rgba(0,0,0,.7)'; c.stroke();
+  c.globalAlpha=1;
+}
+function paint(){
+  var c=nxt.getContext('2d'), i, z, f, o, w;
+  /* обратная связь: прошлый кадр, чуть увеличенный и повёрнутый, гаснет под новым.
+     Увеличение растёт со скоростью — шлейфы текут к краям, как набегающий туннель */
+  var fb=(calm?0.5:0.76)*(0.6+0.4*G.sat), zoom=1.006+G.speed*0.0008*G.slowK;
+  c.setTransform(1,0,0,1,0,0); c.globalCompositeOperation='source-over'; c.globalAlpha=1;
+  c.fillStyle='#000'; c.fillRect(0,0,LW,LH);
+  c.globalAlpha=fb;
+  c.translate(LCX,LCY); c.rotate(G.swirl); c.scale(zoom,zoom); c.translate(-LCX,-LCY);
+  c.drawImage(cur,0,0);
+  c.setTransform(1,0,0,1,0,0); c.globalAlpha=1;
+  c.globalCompositeOperation='lighter';
+  drawTunnel(c);
+  drawMandala(c);
+  /* бусины в буфере — только бледный след для шлейфов; сами они в верхнем слое */
+  for(i=orbs.length-1;i>=0;i--){ o=orbs[i]; if(o.got) continue; z=o.pos-G.dist; f=pf(z);
+    var A=fog(z); if(A<=0) continue;
+    drawBall(c,LCX+bx(z)+o.x*LRS*f,LCY+by(z)+o.y*LRS*f,LRS*f*0.06,o.d*40+G.hue,A*0.3); }
+  for(i=0;i<parts.length;i++){ var q=parts[i]; z=q.pos-G.dist; if(z<-0.6) continue; f=pf(Math.max(-0.5,z));
+    drawBall(c,LCX+bx(z)+q.x*LRS*f,LCY+by(z)+q.y*LRS*f,LRS*f*0.05*(q.life+0.3),q.h+G.hue,q.life*1.6); }
+  /* хвоста кометы в буфере нет: обратная связь размножала его спиралью красных точек, и
+     живой игрок «терял точку, путался в её положении» */
+  c.globalCompositeOperation='source-over';
+  var t=cur; cur=nxt; nxt=t;
+  cur.style.visibility='visible'; nxt.style.visibility='hidden';
+
+  ctx.setTransform(1,0,0,1,0,0); ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  var k=BS, sx=(LCX+S.x*LRS)*k, sy=(LCY+S.y*LRS)*k;
+
+  /* стены и бусины вперемешку по глубине, от дальних к ближним, чтобы шторка ближней
+     стены закрывала то, что за ней, но не бусины перед ней */
+  var nx=null; for(i=0;i<walls.length;i++) if(!walls[i].done){ nx=walls[i]; break; }
+  /* нить через ближайшие бусины: по отдельным огонькам на пёстром туннеле траектория не
+     читалась. Нить рисуется под стенами — и уходит в прорезь, как и должна */
+  ctx.beginPath(); var th=0;
+  for(i=0;i<orbs.length&&th<8;i++){ o=orbs[i]; z=o.pos-G.dist; if(o.got||z<0) continue; f=pf(z);
+    var tx=(LCX+bx(z)+o.x*LRS*f)*k, ty=(LCY+by(z)+o.y*LRS*f)*k;
+    if(th===0) ctx.moveTo(tx,ty); else ctx.lineTo(tx,ty); th++; }
+  if(th>1){ ctx.lineJoin='round'; ctx.lineWidth=4*DPR; ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.stroke();
+    ctx.lineWidth=2*DPR; ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.stroke(); }
+  var wi=walls.length-1, oi=orbs.length-1;
+  while(wi>=0||oi>=0){
+    if(oi<0 || (wi>=0 && walls[wi].pos>=orbs[oi].pos)){ drawWall(ctx,walls[wi],k,walls[wi]===nx); wi--; continue; }
+    o=orbs[oi--]; if(o.got) continue; z=o.pos-G.dist; f=pf(z); var oa=fog(z); if(oa<=0) continue;
+    drawBead(ctx,(LCX+bx(z)+o.x*LRS*f)*k,(LCY+by(z)+o.y*LRS*f)*k,Math.max(6*DPR,LRS*f*k*(0.15+0.015*Math.sin(G.t*3+o.ph)+0.015*G.pulse)),o.d*40+G.hue,oa);
+  }
+
+  /* метка на ближайшей стене: куда комета ударит, если останется где есть. Цвет —
+     от позы стены в момент прихода, а не от того, как она повёрнута сейчас */
+  var nw=null; for(i=0;i<walls.length;i++) if(!walls[i].done){ nw=walls[i]; break; }
+  if(nw && !G.demo){ z=nw.pos-G.dist; f=pf(z);
+    if(z<ZFAR*0.6){ var bad=solid(nw,S.x,S.y), mx=(LCX+bx(z)+S.x*LRS*f)*k, my=(LCY+by(z)+S.y*LRS*f)*k;
+      ctx.beginPath(); ctx.arc(mx,my,Math.max(3*DPR,HITR*2*LRS*f*k),0,2*Math.PI);
+      ctx.lineWidth=2*DPR; ctx.strokeStyle=bad?'rgba(255,60,50,.95)':'rgba(255,255,255,.8)'; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(mx,my); ctx.lineWidth=1*DPR;
+      ctx.strokeStyle=bad?'rgba(255,60,50,.3)':'rgba(255,255,255,.18)'; ctx.stroke(); } }
+
+  /* сама комета — чётко, поверх буфера, цветом пипки, на тёмной подложке и в белом
+     кольце: такого знака больше нигде на поле нет, его не спутать с бусиной */
+  if(!G.demo && !(G.inv>0 && Math.floor(G.inv*16)%2)){
+    var rr=Math.max(5*DPR,HITR*LRS*k*1.3);
+    ctx.fillStyle='rgba(0,0,0,.6)'; ctx.beginPath(); ctx.arc(sx,sy,rr*2.6,0,2*Math.PI); ctx.fill();
+    var gr=ctx.createRadialGradient(sx,sy,0,sx,sy,rr*3.2);
+    gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(0.25,'rgba(255,90,70,.95)'); gr.addColorStop(1,'rgba(228,50,43,0)');
+    ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(sx,sy,rr*3.2,0,2*Math.PI); ctx.fill();
+    ctx.fillStyle='#e4322b'; ctx.beginPath(); ctx.arc(sx,sy,rr,0,2*Math.PI); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(sx,sy,rr*0.42,0,2*Math.PI); ctx.fill();
+    ctx.lineWidth=2*DPR; ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(sx,sy,rr*2.3,0,2*Math.PI); ctx.stroke();
+  }
+
+  /* удар — только красный отлив, гаснущий за полсекунды. Сначала тут была инверсия всего
+     поля на 0.1 с; её убрали вместе с неоном */
+  if(G.flash>0){
+    ctx.fillStyle='rgba(228,50,43,'+(Math.min(1,G.flash)*(calm?0.15:0.25)).toFixed(3)+')'; ctx.fillRect(0,0,cv.width,cv.height);
+  }
+  if(G.breath||G.slowK<0.95){
+    var v=ctx.createRadialGradient(cv.width/2,cv.height/2,Math.min(cv.width,cv.height)*0.3,cv.width/2,cv.height/2,Math.max(cv.width,cv.height)*0.7);
+    v.addColorStop(0,'rgba(127,216,255,0)'); v.addColorStop(1,'rgba(127,216,255,'+((1-G.slowK)/0.55*0.22).toFixed(3)+')');
+    ctx.fillStyle=v; ctx.fillRect(0,0,cv.width,cv.height);
+  }
+  if(G.banner){
+    var b=G.banner, al=Math.min(1,b.t/0.6,(3.2-b.t)/0.3);
+    ctx.globalAlpha=Math.max(0,al); ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='600 '+Math.round(13*DPR)+'px "IBM Plex Mono",monospace'; ctx.fillStyle='#f0b429';
+    ctx.fillText(b.a.toUpperCase(),cv.width/2,cv.height*0.2);
+    ctx.font='600 '+Math.round(Math.min(34,W/18)*DPR)+'px "IBM Plex Mono",monospace'; ctx.fillStyle='#fff';
+    ctx.fillText(lvlName(b.l),cv.width/2,cv.height*0.2+30*DPR);
+    ctx.globalAlpha=1;
+  }
+}
+
+/* ======================= HUD ======================= */
+var hudT=0, FIN=null;
+function fmt(n){ return String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
+function hud(dt){
+  hudT+=dt; if(hudT<0.08) return; hudT=0;
+  /* за оверлеями летит автопилот со своим G; шапка показывает игру, а после рассвета — итог */
+  var src=G.phase==='over'?FIN:(G.demo?null:G);
+  var gl=src?Math.max(0,src.glow):80, lv=src?src.lvl:0;
+  el('hGlow').style.width=gl.toFixed(1)+'%';
+  el('hGlowBox').className='glow'+(src&&gl<20?' low':'');
+  el('hScore').textContent=fmt(src?src.score:0);
+  el('hChain').textContent=src?src.chain:0;
+  el('hLvl').textContent=(lv+1)+' · '+lvlName(lv);
+  el('hBest').textContent=fmt(best);
+  dot.style.transform='translate('+(stick.x*24).toFixed(1)+'px,'+(stick.y*24).toFixed(1)+'px)';
+  rateOut.textContent=stick.rate;
+  brOut.className=G.breath?'br on':'br';
+}
+
+/* ======================= ЦИКЛ ======================= */
+var last=0, acc=0, lastCut=0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(!last) last=ts;
+  var dt=Math.min(0.05,(ts-last)/1000); last=ts;
+  if(dt<=0) return;
+  if(G.phase==='pause'){ hud(dt); return; }
+  if(G.phase==='fly' && !AUTO) readStick(dt); else { accX=accY=0; stick.rate=0; }
+  acc+=dt;
+  var guard=0;
+  while(acc>=FIX && guard++<12 && G.phase!=='pause'){ step(FIX); acc-=FIX; }
+  if(guard>=12) acc=0;
+  /* пульс от бочки: момент удара известен звуку заранее, картинка ловит его по часам */
+  if(AC){ while(kicks.length && kicks[0]<=AC.currentTime){ kicks.shift(); G.pulse=1; } }
+  if(musLP && AC && G.phase==='fly'){
+    var cut=300+60*Math.max(0,G.glow); if(G.breath) cut=Math.min(cut,700);
+    if(G.flash<=0 && Math.abs(cut-lastCut)>lastCut*0.04){ lastCut=cut; at(musLP.frequency,cut,0.4); }
+  }
+  musicTick();
+  paint();
+  hud(dt);
+}
+
+/* ======================= ФАЗЫ ======================= */
+function lockPointer(){
+  /* в новых Chromium requestPointerLock возвращает промис, и отказ (с file:// без жеста,
+     в безголовом браузере) иначе всплывает как необработанная ошибка */
+  if(cv.requestPointerLock) try{ var pr=cv.requestPointerLock(); if(pr&&pr.catch) pr.catch(function(){}); }catch(e){}
+}
+function start(){
+  initAudio();
+  if(AC && AC.state==='suspended') AC.resume();
+  G.phase='fly'; reset(false); G.phase='fly'; last=0; acc=0; mStep=0; if(AC) mNext=AC.currentTime+0.1;
+  botStick=null; btnBreath=false;
+  ovStart.hidden=true; ovOver.hidden=true; ovPause.hidden=true;
+  G.banner={t:2.6, a:tr('go'), l:0};
+  lockPointer();
+  snd.start();
+}
+function gameOver(){
+  if(G.score>best){ best=Math.floor(G.score); store('pipka.feerie.best',best); }
+  el('fScore').textContent=fmt(G.score);
+  el('fLvl').textContent=G.lvl+1;
+  el('fNotes').textContent=G.notes;
+  el('fChain').textContent=G.bestChain;
+  el('fNote').textContent=tr(G.lvl>=7?'n4':G.lvl>=4?'n3':G.lvl>=1?'n2':(G.passed>=6?'n1':'n0'));
+  FIN={glow:0, lvl:G.lvl, score:G.score, chain:G.chain};
+  G.phase='over'; G.demo=true; G.banner=null; G.flash=0; G.inv=0;
+  if(AC){ noise(2.5,'lowpass',3000,100,0.15,sfx); }
+  ovOver.hidden=false;
+  if(document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
+  hudT=1; hud(0);
+}
+function pause(){
+  if(G.phase!=='fly') return;
+  G.phase='pause'; ovPause.hidden=false; btnBreath=false;
+  if(AC) try{ AC.suspend(); }catch(e){}
+  if(document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
+}
+function resume(){
+  if(G.phase!=='pause') return;
+  G.phase='fly'; ovPause.hidden=true; accX=0; accY=0; last=0; acc=0;
+  if(AC) try{ AC.resume(); }catch(e){}
+  lockPointer();
+}
+document.addEventListener('pointerlockchange',function(){
+  if(!document.pointerLockElement && G.phase==='fly' && !AUTO) pause();
+});
+el('btnStart').addEventListener('click',start);
+el('btnAgain').addEventListener('click',start);
+el('btnResume').addEventListener('click',resume);
+field.addEventListener('click',function(e){
+  if(e.target.tagName==='BUTTON') return;
+  if(G.phase==='pause') resume();
+});
+var sl=el('sens'), sv=el('sensVal');
+sl.value=sens; sv.textContent=sens+' px/s';
+sl.addEventListener('input',function(){ sens=num(sl.value,380); sv.textContent=sens+' px/s'; store('pipka.feerie.sens',sens); });
+var mb=el('btnMute'), mub=el('btnMusic'), cb=el('btnCalm');
+function drawButtons(){
+  mb.textContent=tr('snd')+': '+(muted?tr('off'):tr('on'));
+  mub.textContent=tr('mus')+': '+(musicOn?tr('on'):tr('off'));
+  cb.textContent=tr('calm')+': '+(calm?tr('on'):tr('off'));
+}
+mb.addEventListener('click',function(){
+  muted=!muted; store('pipka.mute',muted?'1':'0'); drawButtons();
+  if(master) at(master.gain, muted?0:1, 0.05);
+});
+mub.addEventListener('click',function(){
+  musicOn=!musicOn; store('pipka.feerie.music',musicOn?'1':'0'); drawButtons();
+  if(mus) at(mus.gain, musicOn?0.5:0, 0.05);
+});
+cb.addEventListener('click',function(){ calm=!calm; store('pipka.feerie.calm',calm?'1':'0'); drawButtons(); });
+el('btnLang').addEventListener('click',function(){
+  LANG=(LANG==='ru'?'en':'ru'); store('pipka.lang',LANG); applyLang();
+});
+
+/* крючок для прогона ботом в безголовом браузере; в обычной игре не используется */
+if(location.hash==='#test') window.__feerie={G:function(){return G;},S:S,step:step,paint:paint,start:start,reset:reset,
+  walls:function(){return walls;}, orbs:function(){return orbs;}, solid:solid, clear:clear,
+  auto:function(on,err){ AUTO=!!on; BOTERR=err||0; }, botFly:botFly, botStick:function(){return botStick;},
+  setStick:function(x,y){ stick.x=x; stick.y=y; }, stick:stick, VMAX:VMAX, WPL:WPL, calm:function(v){calm=v;},
+  setGlow:function(v){G.glow=v;}, genWall:genWall, speedAt:speedAt, spacingAt:spacingAt};
+
+function boot(saved){
+  if(saved&&saved.best>best) best=saved.best;
+  if(saved&&saved.sens){ sens=saved.sens; sl.value=sens; sv.textContent=sens+' px/s'; }
+  bakeSprites(); resize(); reset(true); applyLang(); paint(); hud(1);
+  requestAnimationFrame(frame);
+}
+try{
+  if(window.claude && window.claude.hot){
+    window.claude.hot.snapshot(function(){ return {best:best, sens:sens}; });
+    if(window.claude.hot.ready) window.claude.hot.ready(boot); else boot(window.claude.hot.data||{});
+  } else boot({});
+}catch(e){ boot({}); }
+})();
+</script>
+</body>
+</html>
