@@ -75,5 +75,4 @@ DIVERGENCE: ██████ (WITHIN-TOLERANCE)
 
 AI wrote the games. Human applied pressure. Pressure measured in px/s.
 Synthetic voice rated "vile". Replaced. Re-rating pending.
-Psychedelia rendered at 544×300. Upscaled by CSS. Not yet heard.
 ```
