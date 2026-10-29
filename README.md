@@ -5,10 +5,7 @@
 Browser games for the **TrackPoint**, the red nub between the G, H and B keys of a ThinkPad.
 Here it goes by **pipka**, which is what the games are named after.
 
-**Written by AI, not by hand.** The code, the texts, the READMEs and the hub were written
-by Claude from requests in a chat; by hand the repository has been touched practically not
-at all. Every game is a slop one-shot: one request, one game in one sitting, plus an
-honest record of how long it took, how many tokens it cost and what shipped broken.
+AI written, slop alert issued;
 
 [Русская версия](README.ru.md) · Live site: GitHub Pages from the repository root,
 open `/`.
