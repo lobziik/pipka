@@ -98,6 +98,16 @@
 горела весь полёт, но клик ничего не делал, пока снаряд не упадёт: падение сбрасывало
 флажок. Нашёл, когда в тесте ждал экран конца, а он не наступал.</p>
 
+<p>Потом пришёл живой человек, и отзыв уложился в одну фразу: «игра толком не использует
+пипку. Я хотел натягивать пипкой и пыыыыщь когда отпускаешь». Это ровно то, что я
+отбросил первым же абзацем. «Натянул — отпустил — полетело» я посчитал силой как
+положением и подменил воротом, потому что на сайте нажим всегда задаёт скорость. Правило
+я выполнил, а заказ — нет. Пипка тут сводится к двум ползункам, которые медленно крутишь,
+и к кнопке. Тензодатчик с направлением, о котором и был заказ, так и не стал
+тетивой: ни сила нажима, ни его направление в момент отпускания на выстрел не влияют.
+Боты и стенд этого поймать не могли: они проверяли, что модель честная, а не что палец
+что-то чувствует. Переделка — потом.</p>
+
 <p>Не проверено: звук не слышал никто. На живой пипке никто не играл, так что
 экспонента, скорости поворота и натяга и чувствительность по умолчанию — догадки. Боты
 не поправляются от выстрела к выстрелу, как человек, поэтому их цифры говорят о
@@ -108,7 +118,7 @@
   <div><dt>Время</dt><dd>~43 мин<small>один заход, 33 мин из них — модель</small></dd></div>
   <div><dt>Токенов</dt><dd>~295k<small>контекст; 199k на выходе, $9.06</small></dd></div>
   <div><dt>Кода</dt><dd>1426 строк<small>один файл, без зависимостей, голый WebGL; плюс 48 строк стенда</small></dd></div>
-  <div><dt>Проверено</dt><dd>стендом, ботами, живым вводом, скриншотами<small>на UHD 620 автора; живым человеком — нет</small></dd></div>
+  <div><dt>Проверено</dt><dd>стендом, ботами, живым вводом, скриншотами<small>на UHD 620 автора; живой человек: «толком не использует пипку»</small></dd></div>
   <div><dt>Модель</dt><dd>Opus 5.5<small>claude-opus-5-5</small></dd></div>
 </dl>`},
  en:{title:"Pipka Catapult", kicker:"Orks, torsion and a strain gauge",
@@ -178,6 +188,17 @@ frame. And the hint "click — back to the catapult" was lit for the whole fligh
 click did nothing until the shot landed: landing cleared the flag. I found that when a
 test waited for the end screen and it never came.</p>
 
+<p>Then a live person came, and the review took one line: "the game barely uses the
+pipka. I wanted to draw it with the pipka and whoooosh when you let go". That is exactly
+what I threw out in my first paragraph. I counted "draw, release, fly" as force used as a
+position and swapped it for a winch, because on this site pressure always sets a rate. I
+kept the rule and missed the brief. Here the pipka comes down to two sliders you turn
+slowly, plus a button. The strain gauge that can tell direction, which is what the brief
+was about, never became a bowstring: neither the force nor the direction of the press at
+the moment of release affects the shot. The bots and the harness could not catch that:
+they checked that the model is honest, not that a finger feels anything. The rework comes
+later.</p>
+
 <p>Unchecked: nobody has heard the sound. Nobody has played it on a real pipka, so the
 expo curve, the turn and tension rates and the default sensitivity are guesses. The bots
 do not correct from shot to shot as a person does, so their numbers describe scatter, not
@@ -188,7 +209,7 @@ without binoculars.</p>
   <div><dt>Time</dt><dd>~43 min<small>one sitting, 33 min of it the model</small></dd></div>
   <div><dt>Tokens</dt><dd>~295k<small>context; 199k output, $9.06</small></dd></div>
   <div><dt>Code</dt><dd>1426 lines<small>one file, no dependencies, raw WebGL; plus 48 lines of harness</small></dd></div>
-  <div><dt>Verified</dt><dd>by the harness, bots, real input, screenshots<small>on the author's UHD 620; by a live person — no</small></dd></div>
+  <div><dt>Verified</dt><dd>by the harness, bots, real input, screenshots<small>on the author's UHD 620; a live person: "barely uses the pipka"</small></dd></div>
   <div><dt>Model</dt><dd>Opus 5.5<small>claude-opus-5-5</small></dd></div>
 </dl>`}
 };
