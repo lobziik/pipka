@@ -192,8 +192,11 @@ Every game reads the TrackPoint as a force stick, not a pointer:
   jabs) turns that into a deflection of −1…+1.
 * The sensitivity slider is the px/s that counts as full deflection. It is per-machine
   and lives in `localStorage`; never hard-code it.
-* Deflection commands a *rate* (bank rate, yaw rate, velocity), never a position. This is
-  the whole point of the project — an isometric control paired with rate control.
+* What the deflection drives is not fixed. The project explores the pipka: rate control
+  (bank, yaw, velocity), drawing and releasing, flicks, the direction of a press — any of
+  them. When a brief describes a gesture, build that gesture. (An earlier version of this
+  file required rate control everywhere; that rule was written by an AI, not by the
+  author, and is withdrawn.)
 
 ## Simulation
 

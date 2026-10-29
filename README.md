@@ -18,7 +18,8 @@ returns to zero by itself when released. The games are built around that: where 
 ordinary game reads cursor position, they read force. In the browser that is Pointer
 Lock: relative `movementX/Y` deltas divided by frame time give the pointer speed in px/s,
 proportional to pressure, and an exponential filter turns it into a stick deflection of
-−1…+1. Deflection commands a *rate* — bank rate, yaw rate — never a position.
+−1…+1. What a game does with that force — a rate, a draw, a flick, a direction at the
+moment of release — is the open question the games explore.
 
 The slider under every game sets the pressure that counts as full deflection. Pipkas
 differ in stiffness between ThinkPads, so the value is per machine and remembered in the
@@ -73,6 +74,7 @@ FUTURE GADGET #%&?: PIPKA-GAMES
 STATUS: OPERATIONAL
 DIVERGENCE: ██████ (WITHIN-TOLERANCE)
 
-AI wrote the games. Human applied pressure. Pressure measured in px/s.
-Synthetic voice rated "vile". Replaced. Re-rating pending.
+AI wrote games. Human applied pressure. Pressure measured in px/s.
+
+AI inventing design rules. No human ask issued. Revoked.
 ```

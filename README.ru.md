@@ -15,8 +15,9 @@ AI written, slop alert issued;
 ноль, когда её отпускают. Игры сделаны под это: там, где обычная игра читает позицию
 курсора, они читают силу. В браузере это Pointer Lock: относительные дельты
 `movementX/Y`, делённые на время кадра, дают скорость курсора в px/s, пропорциональную
-нажиму, а экспоненциальный фильтр превращает её в отклонение ручки от −1 до +1.
-Отклонение задаёт *скорость* — крена, поворота, — а не положение.
+нажиму, а экспоненциальный фильтр превращает её в отклонение ручки от −1 до +1. Что
+игра делает с этой силой — скорость, натяг, щелчок, направление в момент отпускания, —
+открытый вопрос, который игры и исследуют.
 
 Ползунок под каждой игрой задаёт нажим, который считается полным отклонением. У разных
 ThinkPad'ов пипка разной жёсткости, так что значение своё на каждой машине и запоминается
@@ -71,7 +72,7 @@ FUTURE GADGET #%&?: PIPKA-GAMES
 STATUS: OPERATIONAL
 DIVERGENCE: ██████ (WITHIN-TOLERANCE)
 
-AI wrote the games. Human applied pressure. Pressure measured in px/s.
-Synthetic voice rated "vile". Replaced. Re-rating pending.
-Psychedelia rendered at 544×300. Upscaled by CSS. Not yet heard.
+AI wrote games. Human applied pressure. Pressure measured in px/s.
+
+AI inventing design rules. No human ask issued. Revoked.
 ```
