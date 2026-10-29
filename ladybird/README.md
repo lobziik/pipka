@@ -32,6 +32,23 @@ pull from 1.5 times as far. After six seconds without input the nearest bud wave
 chimes. The stick filter is τ = 120 ms, twice the danmaku's, and the default threshold is
 560 px/s, because a child's finger pushes hard and all at once.
 
+The magnet strength is chosen below the field ("Magnet", kept in `localStorage`):
+
+| | radius | pull at the centre |
+|---|---|---|
+| strong (default, the original) | 130 px | 190 px/s |
+| medium | 110 px | 130 px/s |
+| weak | 90 px | 80 px/s |
+| off | — | — |
+
+The pull is always below the ladybird's 280 px/s top speed, and the last two buds pull
+from 1.5 times the radius. The strong magnet visibly steers the ladybird on its own, which
+is why the strength is a setting.
+
+A bot pushing at random (8 gardens per setting) shows almost no difference: a garden's
+median is 84–128 s in all four settings, ranging over 24–230 s. In the ladybird any bud
+will do, and random flight bumps into them without a magnet too.
+
 Every key is a balloon rising above that key's place on the keyboard, with a note fixed to
 the key. While playing, every key's default is suppressed (`F5` and `Tab` included), and in
 Chromium full screen `navigator.keyboard.lock()` keeps the browser's own shortcuts too; a

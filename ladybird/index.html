@@ -59,6 +59,7 @@ body{
 .bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
 .bar input[type=range]{flex:1 1 150px; min-width:110px; accent-color:var(--red); height:18px}
 .bar .val{color:var(--amber); font-variant-numeric:tabular-nums; min-width:62px}
+.bar select{font-family:var(--mono); font-size:11px; color:var(--fg); background:var(--carbon); border:1px solid var(--line); border-radius:3px; padding:6px 8px}
 .bar .tip{flex:1 1 100%; text-transform:none; letter-spacing:0; font-family:var(--sans); font-size:11.5px; color:#5f6a75}
 </style>
 </head>
@@ -103,6 +104,13 @@ body{
   <label for="sens" data-i18n="sensL">Чувствительность пипки</label>
   <input type="range" id="sens" min="120" max="1600" step="20" value="560">
   <span class="val" id="sensVal">560 px/s</span>
+  <label for="magnet" data-i18n="magL">Магнит</label>
+  <select id="magnet">
+    <option value="off" data-i18n="mag0">выкл.</option>
+    <option value="weak" data-i18n="mag1">слабый</option>
+    <option value="mid" data-i18n="mag2">средний</option>
+    <option value="strong" data-i18n="mag3">сильный</option>
+  </select>
   <button class="btn ghost" id="btnMute" type="button">Звук: вкл</button>
   <button class="btn ghost" id="btnMusic" type="button">Музыка: вкл</button>
   <button class="btn ghost" id="btnFull" type="button">Экран: весь</button>
@@ -140,7 +148,7 @@ var TXT={
 ru:{brand:'Пипка-Коровка', titleH:'Пипка<span>-</span>Коровка',
  gardens:'Садов', friends:'Друзей', nub:'Пипка',
  intro:'Игра для тех, кому три. Божья коровка красная и круглая, как сама <b>пипка</b>: давишь — летит, отпустил — садится и складывает крылья. Бутоны распускаются, если до них долететь, и у каждого цветка своя нота. Проиграть нельзя, торопиться некуда, читать не нужно.',
- k1:'<b>пипка</b> — полёт; возле бутона коровку чуть-чуть тянет к нему',
+ k1:'<b>пипка</b> — полёт; возле бутона коровку чуть-чуть тянет к нему (магнит настраивается внизу)',
  k2:'<b>любая клавиша</b> — воздушный шарик, его можно лопнуть',
  k3:'<b>кнопки под пробелом</b> — коровка смеётся, цветы поют',
  k4:'<b>взрослым</b>: игра идёт на весь экран, выйти — подержать <b>Esc</b>',
@@ -149,12 +157,13 @@ ru:{brand:'Пипка-Коровка', titleH:'Пипка<span>-</span>Коро�
  lockHint:'Курсор не пойман — щёлкни по полю',
  pauseH:'Коровка ждёт', pauseP:'Нажми куда-нибудь — и полетим дальше.', resume:'Лететь',
  sensL:'Чувствительность пипки', allGames:'Все игры',
+ magL:'Магнит', mag0:'выкл.', mag1:'слабый', mag2:'средний', mag3:'сильный',
  tip:'Если коровка носится от лёгкого касания — тащи ползунок вправо, если еле ползёт под детским пальцем — влево. Сначала попробуй сам, потом дай ребёнку.',
  snd:'Звук', mus:'Музыка', scr:'Экран', scrF:'весь', scrW:'окно', on:'вкл', off:'выкл'},
 en:{brand:'Pipka Ladybird', titleH:'Pipka<span>-</span>Ladybird',
  gardens:'Gardens', friends:'Friends', nub:'Pipka',
  intro:'A game for three-year-olds. The ladybird is red and round, like the <b>pipka</b> itself: push and she flies, let go and she lands and folds her wings. Buds bloom when she reaches them, and every flower has its own note. You cannot lose, there is no hurry, and nothing needs reading.',
- k1:'<b>pipka</b> — flight; near a bud the ladybird is drawn to it, a little',
+ k1:'<b>pipka</b> — flight; near a bud the ladybird is drawn to it, a little (the magnet is set below)',
  k2:'<b>any key</b> — a balloon, which can be popped',
  k3:'<b>buttons under the space bar</b> — the ladybird laughs, the flowers sing',
  k4:'<b>for grown-ups</b>: the game goes full screen, hold <b>Esc</b> to leave',
@@ -163,6 +172,7 @@ en:{brand:'Pipka Ladybird', titleH:'Pipka<span>-</span>Ladybird',
  lockHint:'Pointer not captured — click the field',
  pauseH:'The ladybird is waiting', pauseP:'Click anywhere and off we fly again.', resume:'Fly',
  sensL:'Pipka sensitivity', allGames:'All games',
+ magL:'Magnet', mag0:'off', mag1:'weak', mag2:'medium', mag3:'strong',
  tip:'If the ladybird bolts at a light touch, drag the slider right; if she barely crawls under a child\'s finger, drag it left. Try it yourself first, then hand it over.',
  snd:'Sound', mus:'Music', scr:'Screen', scrF:'full', scrW:'window', on:'on', off:'off'}};
 var LANG=store('pipka.lang')||(((navigator.language||'ru').slice(0,2)==='ru')?'ru':'en');
@@ -439,7 +449,14 @@ function readStick(dt){
 /* Скорость 280 px/s: поле шириной 960 пересекается за три с половиной секунды —
    быстро настолько, чтобы было весело, и медленно настолько, чтобы успеть отпустить */
 /* Коровка — 28 px при высоте поля 540, примерно палец ребёнка на экране ноутбука */
-var BUG_R=28, VMAX=280, FL_R=34, MAG=130, MAGV=150, TOUCH=BUG_R+FL_R+10;
+var BUG_R=28, VMAX=280, FL_R=34, TOUCH=BUG_R+FL_R+10;
+/* Магнит: радиус r, в котором бутон тянет коровку, и тяга — v·(1−d/r)+b px/s.
+   «Сильный» — исходный, подобранный под бота со случайными тычками: до 190 px/s,
+   две трети от VMAX. Он заметно ведёт сам, и взрослому это видно, поэтому сила
+   выбирается: «средний» и «слабый» тянут слабее и ближе, «выкл.» не тянет совсем.
+   Тяга всегда меньше VMAX — пролететь мимо можно при любом */
+var MAGS={off:null, weak:{r:90,v:60,b:20}, mid:{r:110,v:100,b:30}, strong:{r:130,v:150,b:40}};
+var magMode=store('pipka.ladybird.magnet'); if(!MAGS.hasOwnProperty(magMode)) magMode='strong';
 var G={phase:'start', t:0, scene:0, round:0, cel:-1, fade:0, idle:0, wasFull:false, locked:false, lockT:0};
 var bug={x:480,y:300,vx:0,vy:0,open:0,flap:0,blink:0,face:1,laugh:0};
 var targets=[], balloons=[], parts=[], friends=[], leaving=[], clouds=[], flies=[];
@@ -546,9 +563,9 @@ function step(dt){
   var near=null, nd=1e9, left=0, i, f;
   for(i=0;i<targets.length;i++){ f=targets[i]; if(f.open) continue; left++;
     var d=Math.hypot(f.x-bug.x,f.y-bug.y); if(d<nd){ nd=d; near=f; } }
-  var mag=left<=2?MAG*1.5:MAG;
-  if(near && nd<mag && nd>1){
-    var pull=MAGV*(1-nd/mag)+40;
+  var M=MAGS[magMode], mag=M?(left<=2?M.r*1.5:M.r):0;
+  if(M && near && nd<mag && nd>1){
+    var pull=M.v*(1-nd/mag)+M.b;
     tvx+=(near.x-bug.x)/nd*pull; tvy+=(near.y-bug.y)/nd*pull;
   }
   var a=1-Math.exp(-dt/0.25);
@@ -991,6 +1008,10 @@ el('btnResume').addEventListener('click',function(e){ e.stopPropagation(); resum
 field.addEventListener('mousedown',function(e){
   if(G.phase==='pause' && e.target.tagName!=='BUTTON') resume();
 });
+var mgSel=el('magnet'); mgSel.value=magMode;
+mgSel.addEventListener('change',function(){
+  magMode=MAGS.hasOwnProperty(mgSel.value)?mgSel.value:'strong'; store('pipka.ladybird.magnet',magMode); mgSel.blur();
+});
 var sl=el('sens'), sv=el('sensVal');
 sl.value=sens; sv.textContent=sens+' px/s';
 sl.addEventListener('input',function(){ sens=num(sl.value,560); sv.textContent=sens+' px/s'; store('pipka.ladybird.sens',sens); });
@@ -1017,7 +1038,7 @@ el('btnLang').addEventListener('click',function(){
 if(location.hash==='#test') window.__ladybird={G:G,bug:bug,step:step,paint:paint,start:start,
   targets:function(){return targets;}, balloons:function(){return balloons;}, friends:function(){return friends;}, leaving:function(){return leaving;},
   parts:function(){return parts;}, song:function(){return song;}, makeSong:makeSong, keyPlace:keyPlace, balloon:balloon, giggle:giggle,
-  setStick:function(x,y){ botStick={x:x,y:y}; }, readStick:readStick, LW:function(){return LW;}, LH:LH};
+  setMagnet:function(m){ mgSel.value=m; mgSel.dispatchEvent(new Event('change')); }, setStick:function(x,y){ botStick={x:x,y:y}; }, readStick:readStick, LW:function(){return LW;}, LH:LH};
 
 function boot(saved){
   if(saved&&saved.sens){ sens=saved.sens; sl.value=sens; sv.textContent=sens+' px/s'; }

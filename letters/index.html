@@ -161,6 +161,13 @@ body{
   <button class="btn ghost" id="btnStats" type="button" data-i18n="statsBtn">Статистика</button>
   <button class="btn ghost" id="btnVoice" type="button">Голос: вкл</button>
   <select id="voiceSel" hidden></select>
+  <label for="magnet" data-i18n="magL">Магнит</label>
+  <select id="magnet">
+    <option value="off" data-i18n="mag0">выкл.</option>
+    <option value="weak" data-i18n="mag1">слабый</option>
+    <option value="mid" data-i18n="mag2">средний</option>
+    <option value="strong" data-i18n="mag3">сильный</option>
+  </select>
   <button class="btn ghost" id="btnMute" type="button">Звук: вкл</button>
   <button class="btn ghost" id="btnMusic" type="button">Музыка: вкл</button>
   <button class="btn ghost" id="btnFull" type="button">Экран: весь</button>
@@ -211,7 +218,7 @@ var TXT={
 ru:{brand:'Пипка-Буквы', titleH:'Пипка<span>-</span>Буквы',
  words:'Слов', wordT:'Это слово', sessT:'Сегодня', errs:'Мимо', friends:'Друзей', nub:'Пипка',
  intro:'Та же божья коровка, только теперь на бутонах буквы, а наверху слово. Буквы собираются <b>по порядку</b>: долетела до нужной — бутон распускается, буква улетает на своё место в слове. Не та буква качает головой и ждёт. Когда слово собрано, его читают вслух по буквам и целиком. Проиграть нельзя, торопиться некуда.',
- k1:'<b>пипка</b> — полёт; возле нужной буквы коровку чуть-чуть тянет к ней',
+ k1:'<b>пипка</b> — полёт; возле нужной буквы коровку чуть-чуть тянет к ней (магнит настраивается внизу)',
  k2:'<b>любая клавиша</b> — шарик с этой буквой; если она нужная, бутон с ней машет (шарики настраиваются внизу)',
  k3:'<b>кнопки под пробелом</b> — коровка смеётся, слово звучит ещё раз',
  k4:'<b>взрослым</b>: игра идёт на весь экран, выйти — подержать <b>Esc</b>',
@@ -223,6 +230,7 @@ ru:{brand:'Пипка-Буквы', titleH:'Пипка<span>-</span>Буквы',
  pauseStat:'Сегодня: {w} {wn} за {t}',
  sensL:'Чувствительность пипки', allGames:'Все игры',
  balL:'Шарики', bal1:'с буквами', bal2:'без букв', bal3:'выключены',
+ magL:'Магнит', mag0:'выкл.', mag1:'слабый', mag2:'средний', mag3:'сильный',
  levelL:'Слова', lv1:'короткие, по порядку', lv2:'короткие, вразброс', lv3:'+1 лишняя буква', lv4:'длиннее, +2 лишних',
  tip:'Уровень меняется со следующего слова. На первом буквы стоят слева направо, как читаются; дальше — вразброс, потом с лишними. Промахом считается только остановка на чужой букве дольше полусекунды, а не пролёт мимо неё.',
  statsBtn:'Статистика', statsH:'Статистика', statsReset:'Сбросить', statsClose:'Закрыть',
@@ -241,7 +249,7 @@ ru:{brand:'Пипка-Буквы', titleH:'Пипка<span>-</span>Буквы',
 en:{brand:'Pipka Letters', titleH:'Pipka<span>-</span>Letters',
  words:'Words', wordT:'This word', sessT:'Today', errs:'Misses', friends:'Friends', nub:'Pipka',
  intro:'The same ladybird, but now the buds carry letters and there is a word at the top. Letters are collected <b>in order</b>: reach the right one and the bud blooms while its letter flies to its place in the word. A wrong letter shakes its head and waits. When the word is complete it is read aloud, letter by letter and then whole. You cannot lose, and there is no hurry.',
- k1:'<b>pipka</b> — flight; near the right letter the ladybird is drawn to it, a little',
+ k1:'<b>pipka</b> — flight; near the right letter the ladybird is drawn to it, a little (the magnet is set below)',
  k2:'<b>any key</b> — a balloon with that letter; if it is the one needed, its bud waves (balloons are set below)',
  k3:'<b>buttons under the space bar</b> — the ladybird laughs, the word sounds again',
  k4:'<b>for grown-ups</b>: the game goes full screen, hold <b>Esc</b> to leave',
@@ -253,6 +261,7 @@ en:{brand:'Pipka Letters', titleH:'Pipka<span>-</span>Letters',
  pauseStat:'Today: {w} {wn} in {t}',
  sensL:'Pipka sensitivity', allGames:'All games',
  balL:'Balloons', bal1:'with letters', bal2:'no letters', bal3:'off',
+ magL:'Magnet', mag0:'off', mag1:'weak', mag2:'medium', mag3:'strong',
  levelL:'Words', lv1:'short, in order', lv2:'short, scattered', lv3:'+1 extra letter', lv4:'longer, +2 extra',
  tip:'The level changes from the next word. On the first, letters stand left to right as they are read; then scattered, then with extras. A miss is only stopping on a wrong letter for more than half a second, not flying past it.',
  statsBtn:'Statistics', statsH:'Statistics', statsReset:'Reset', statsClose:'Close',
@@ -759,7 +768,14 @@ function readStick(dt){
 /* Скорость 280 px/s: поле шириной 960 пересекается за три с половиной секунды —
    быстро настолько, чтобы было весело, и медленно настолько, чтобы успеть отпустить */
 /* Коровка — 28 px при высоте поля 540, примерно палец ребёнка на экране ноутбука */
-var BUG_R=28, VMAX=280, FL_R=34, MAG=130, MAGV=150, TOUCH=BUG_R+FL_R+10;
+var BUG_R=28, VMAX=280, FL_R=34, TOUCH=BUG_R+FL_R+10;
+/* Магнит: радиус r, в котором бутон тянет коровку, и тяга — v·(1−d/r)+b px/s.
+   «Сильный» — исходный, подобранный под бота со случайными тычками: до 190 px/s,
+   две трети от VMAX. Он заметно ведёт сам, и взрослому это видно, поэтому сила
+   выбирается: «средний» и «слабый» тянут слабее и ближе, «выкл.» не тянет совсем.
+   Тяга всегда меньше VMAX — пролететь мимо можно при любом */
+var MAGS={off:null, weak:{r:90,v:60,b:20}, mid:{r:110,v:100,b:30}, strong:{r:130,v:150,b:40}};
+var magMode=store('pipka.letters.magnet'); if(!MAGS.hasOwnProperty(magMode)) magMode='strong';
 /* Промах — не касание чужой буквы, а остановка на ней: по пути к нужной коровка то и
    дело пролетает над соседними, и пролёт насквозь даже на половине скорости длится
    секунду. Считать его ошибкой значило бы мерить расстановку, а не чтение. Поэтому
@@ -927,9 +943,9 @@ function step(dt){
   var near=null, nd=1e9, i, f, left=G.word.length-G.pos;
   for(i=0;i<targets.length;i++){ f=targets[i]; if(!isNext(f)) continue;
     var d=Math.hypot(f.x-bug.x,f.y-bug.y); if(d<nd){ nd=d; near=f; } }
-  var mag=left<=2?MAG*1.5:MAG;
-  if(near && nd<mag && nd>1){
-    var pull=MAGV*(1-nd/mag)+40;
+  var M=MAGS[magMode], mag=M?(left<=2?M.r*1.5:M.r):0;
+  if(M && near && nd<mag && nd>1){
+    var pull=M.v*(1-nd/mag)+M.b;
     tvx+=(near.x-bug.x)/nd*pull; tvy+=(near.y-bug.y)/nd*pull;
   }
   var a=1-Math.exp(-dt/0.25);
@@ -1465,6 +1481,10 @@ field.addEventListener('mousedown',function(e){
 var sl=el('sens'), sv=el('sensVal');
 sl.value=sens; sv.textContent=sens+' px/s';
 sl.addEventListener('input',function(){ sens=num(sl.value,560); sv.textContent=sens+' px/s'; store('pipka.letters.sens',sens); });
+var mgSel=el('magnet'); mgSel.value=magMode;
+mgSel.addEventListener('change',function(){
+  magMode=MAGS.hasOwnProperty(mgSel.value)?mgSel.value:'strong'; store('pipka.letters.magnet',magMode); mgSel.blur();
+});
 var bmSel=el('balMode'); bmSel.value=balMode;
 bmSel.addEventListener('change',function(){
   balMode=bmSel.value==='plain'||bmSel.value==='off'?bmSel.value:'letters';
@@ -1525,7 +1545,7 @@ if(location.hash==='#test') window.__letters={G:G,bug:bug,step:step,paint:paint,
   isNext:isNext, pickVoice:pickVoice, say:say, sayPraise:sayPraise, voice:function(){ return {VUSE:VUSE,VSTATE:VSTATE,dec:Object.keys(VBUF).length,src:vSrc.length,ac:!!AC}; }, stats:stats, renderStats:renderStats, openStats:openStats, newWord:newWord, hops:function(){return hops;},
   targets:function(){return targets;}, balloons:function(){return balloons;}, friends:function(){return friends;}, leaving:function(){return leaving;},
   parts:function(){return parts;}, song:function(){return song;}, makeSong:makeSong, keyPlace:keyPlace, balloon:balloon, giggle:giggle,
-  setBalMode:function(m){ bmSel.value=m; bmSel.dispatchEvent(new Event('change')); }, setStick:function(x,y){ botStick={x:x,y:y}; }, readStick:readStick, LW:function(){return LW;}, LH:LH};
+  setBalMode:function(m){ bmSel.value=m; bmSel.dispatchEvent(new Event('change')); }, setMagnet:function(m){ mgSel.value=m; mgSel.dispatchEvent(new Event('change')); }, setStick:function(x,y){ botStick={x:x,y:y}; }, readStick:readStick, LW:function(){return LW;}, LH:LH};
 
 function boot(saved){
   if(saved&&saved.sens){ sens=saved.sens; sl.value=sens; sv.textContent=sens+' px/s'; }

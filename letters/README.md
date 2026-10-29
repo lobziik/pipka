@@ -29,6 +29,13 @@ two letters). A miss is not touching a wrong letter but stopping on it: below 60
 half a second running; flying straight through, even at half speed, takes about a second.
 After a miss, or six seconds without input, the right letter waves and names itself.
 
+The magnet strength is chosen below the field, as in the ladybird: strong (default:
+130 px, up to 190 px/s), medium (110 px, 130 px/s), weak (90 px, 80 px/s) and off. It
+matters more here, since only one letter will do. A bot pushing at random on level one
+(8 words per setting) collects a word in a median 91 s with the strong magnet and 193 s
+with none, the tail reaching 430 s; medium and weak land in between, about 150 s, though
+with eight runs that is noise.
+
 Levels: 1 — short words, letters left to right in reading order; 2 — the same, scattered;
 3 — plus one extra letter not in the word; 4 — longer words and two extras. The first word
 is MAMA (MOM in English). A balloon's letter comes from the physical key and the game's
