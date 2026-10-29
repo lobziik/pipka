@@ -198,5 +198,53 @@ check('снос 15 м/с гасится наклоном 20°', rr.hit && rr.t<3
   rr.hit?(rr.t.toFixed(1)+' с, потрачено '+(LAND.fuel0-L.fuel).toFixed(0)+' кг'):'не погасился за 60 с');
 
 
+/* ================= КАТАПУЛЬТА ================= */
+const srcC=fs.readFileSync(path.join(__dirname,'catapult','index.html'),'utf8');
+const A3=srcC.indexOf('/* --- CATAPULT-CORE-BEGIN --- */'), B3=srcC.indexOf('/* --- CATAPULT-CORE-END --- */');
+if(A3<0||B3<0){ console.error('не нашёл маркеры CATAPULT-CORE в catapult/index.html'); process.exit(2); }
+eval(srcC.slice(A3,B3));   // определяет CAT, AMMO, armInit, armStep, release, launch, projStep, flyTo
+const [ROCK,GROT,SQUIG]=AMMO;
+const range=(t,am,wx,wz,dh)=>{ const P=flyTo(t,am,0,wx||0,wz||0,(dh||0)+am.r,0,0,0); return {d:P.z, lat:P.x, t:P.t}; };
+
+// энергия: всё, что отдал торсион, минус подъём рычага и груза, — в кинетику на сходе
+for(const am of AMMO){
+  const A=armInit(1); let n=0; while(!armStep(A,am.m,DT)&&n++<600);
+  const E=CAT.K*(A.th*CAT.PHI-CAT.PHI*CAT.PHI/2), dh=Math.sin(CAT.A0+CAT.PHI)-Math.sin(CAT.A0);
+  const Eg=(am.m*CAT.L+CAT.mrod*CAT.L/2)*CAT.g*dh, KE=0.5*(CAT.Irod+am.m*CAT.L*CAT.L)*A.w*A.w;
+  check('энергия рычага: '+am.id, Math.abs(KE-(E-Eg))/(E-Eg)<0.015,
+    'кинетика '+(KE/1000).toFixed(1)+' кДж против '+((E-Eg)/1000).toFixed(1)+', вылет '+(A.w*CAT.L).toFixed(1)+' м/с за '+(n*DT).toFixed(2)+' с');
+}
+let P0=launch(1,ROCK,0,0,0,0), v0=Math.hypot(P0.vz,P0.vy), ang=Math.atan2(P0.vy,P0.vz)*57.3;
+check('камень на полном натяге', v0>38&&v0<42 && Math.abs(ang-42)<1, v0.toFixed(1)+' м/с под '+ang.toFixed(1)+'°');
+
+// дальность: от «под ноги» до дальше самого дальнего форта, и строго растёт с натягом
+let r0=range(0,ROCK), r1=range(1,ROCK);
+check('дальность камня, натяг 0…100%', r0.d<35 && r1.d>140 && r1.d<170, r0.d.toFixed(0)+' … '+r1.d.toFixed(0)+' м, полёт '+r1.t.toFixed(1)+' с');
+for(const am of AMMO){
+  let prev=-1, mono=true, out=[];
+  for(let t=0;t<=1.0001;t+=0.05){ const d=range(t,am).d; if(d<=prev) mono=false; prev=d; if(Math.abs(t*4-Math.round(t*4))<1e-6) out.push(Math.round(d)); }
+  check('дальность растёт с натягом: '+am.id, mono, out.join(' / ')+' м на 0/25/50/75/100%');
+}
+// линейность: шаг 1% натяга в середине и по краям отличается не больше чем вдвое
+{ const s=(t)=>range(t+0.01,ROCK).d-range(t,ROCK).d, a=s(0.1), b=s(0.5), c=s(0.9);
+  check('1% натяга ≈ одинаковые метры', Math.max(a,b,c)/Math.min(a,b,c)<2, a.toFixed(2)+' / '+b.toFixed(2)+' / '+c.toFixed(2)+' м на 10/50/90%'); }
+
+// форты на 66–132 м (FORT.D в genLevel) и на 3 м выше катапульты; донжон ещё на 7 м
+// глубже. Самый дальний достаём камнем против самого сильного ветра, 7 м/с
+{ const far=range(1,ROCK,0,-7,3).d, near=range(0,ROCK,0,7,3).d;
+  check('все форты в досягаемости камня', far>132+8 && near<66, 'встречный 7 м/с: '+far.toFixed(0)+' м; попутный 7 м/с на нуле: '+near.toFixed(0)+' м'); }
+
+// ветер сносит грота сильнее камня, на одной дистанции ~90 м
+{ const tr=(am)=>{ let lo=0,hi=1; for(let i=0;i<30;i++){ const m=(lo+hi)/2; if(range(m,am).d<90) lo=m; else hi=m; } return lo; };
+  const tR=tr(ROCK), tG=tr(GROT), dR=range(tR,ROCK,5,0).lat, dG=range(tG,GROT,5,0).lat;
+  check('боковой ветер 5 м/с на 90 м', dG>2*dR && dR>0.5, 'камень '+dR.toFixed(1)+' м, грот '+dG.toFixed(1)+' м (натяг '+(tR*100).toFixed(0)+'% и '+(tG*100).toFixed(0)+'%)');
+  // уши: полный нажим вбок весь полёт
+  const P=launch(tG,GROT,0,0,0,0); let T=0; while(T<30){ projStep(P,GROT,0,0,1,0,DT); T+=DT; if(P.vy<0&&P.y<=GROT.r) break; }
+  // вправо — это −x: камера смотрит вдоль +z
+  check('грот рулит ушами', -P.x>6&&-P.x<20, 'вправо на '+(-P.x).toFixed(1)+' м за '+T.toFixed(1)+' с полёта на '+P.z.toFixed(0)+' м');
+  const Q=launch(tG,GROT,0,0,0,0); T=0; while(T<30){ projStep(Q,GROT,0,0,0,1,DT); T+=DT; if(Q.vy<0&&Q.y<=GROT.r) break; }
+  check('грот тянет ушами вверх', Q.z>90+5&&Q.z<90+40, 'дальность '+Q.z.toFixed(0)+' м вместо 90'); }
+
+
 console.log('— прошло —'); ok.forEach(s=>console.log('  ✓ '+s));
 if(bad.length){ console.log('— ПРОВАЛ —'); bad.forEach(s=>console.log('  ✗ '+s)); process.exitCode=1; }

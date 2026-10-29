@@ -40,6 +40,7 @@ xinput set-prop <id> "libinput Accel Speed" 0.4
 | [**Pipka Ladybird**](ladybird/) | For a three-year-old: you cannot lose, and a palm on the keyboard is a balloon. |
 | [**Pipka Letters**](letters/) | The ladybird learns to read: letters in order, sounds from a generated voice, statistics for the parent. |
 | [**Pipka Féerie**](feerie/) | A tunnel that dreams itself: mandalas with slits, notes as beads of light, and game over is called dawn. |
+| [**Pipka Catapult**](catapult/) | Orks in 3D: the pipka cranks the winch, tension is range, and red ones go faster. |
 
 ## Documentation
 
@@ -56,7 +57,7 @@ disk.
 
 ```sh
 setsid -f xdg-open index.html >/dev/null 2>&1   # or just open it in a browser
-node physics-test.js                              # the car and lander models
+node physics-test.js                              # the car, lander and catapult models
 ```
 
 `setsid -f` keeps Ctrl-C in the terminal from killing the browser (in zsh, `&!` works too).

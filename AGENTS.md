@@ -14,13 +14,13 @@ index.html          the hub: tabs — contents table plus one tab per game, buil
 README.md           what the repository is: the idea, the game list, where the docs are
 README.ru.md        the same in Russian
 AGENTS.md           this file
-physics-test.js     model harness for the car and the lander (node, no deps)
+physics-test.js     model harness for the car, the lander and the catapult (node, no deps)
 LICENSE             MIT
 .nojekyll           GitHub Pages serves the files as they are
 .gitignore
 
 <game>/             one folder per game: plane, race, moon, danmaku, ladybird, letters,
-                    feerie
+                    feerie, catapult
   index.html        the game — a complete standalone document
   README.md         details of this game, English
   README.ru.md      the same, Russian
@@ -49,8 +49,8 @@ Only what the repository is, kept short:
 * where the documentation lives (hub, game README, card, this file);
 * how to run, licence;
 * at the very bottom, after `---`, the `FUTURE GADGET` lab-note block in a code fence, as
-  in the author's other repositories. Keep it; update its lines when something notable
-  happens.
+  in the author's other repositories. It is the author's own: never edit it, not even to
+  add a line for a new game.
 
 No game details in the root README: controls, models, numbers and checks go to the game's
 own README. Adding a game means one row in the root list, nothing more.
@@ -125,13 +125,20 @@ URL hash (`#race`), so a link can point at one game.
    `node physics-test.js` — all checks must pass. It extracts the models straight out of
    the games: the car from `race/index.html` between `PHYSICS-CORE-BEGIN` /
    `PHYSICS-CORE-END`, the lander from `moon/index.html` between `LANDER-CORE-BEGIN` /
-   `LANDER-CORE-END`. Test and game therefore cannot drift apart. Do not move those
-   markers, and keep `carStep` and `landStep` dependent on nothing outside their constants
-   (`CAR`, `LAND`) and their arguments — no DOM, no terrain, no track data.
+   `LANDER-CORE-END`, the catapult from `catapult/index.html` between
+   `CATAPULT-CORE-BEGIN` / `CATAPULT-CORE-END`. Test and game therefore cannot drift
+   apart. Do not move those markers, and keep `carStep`, `landStep`, `armStep` and
+   `projStep` dependent on nothing outside their constants (`CAR`, `LAND`, `CAT`, `AMMO`)
+   and their arguments — no DOM, no terrain, no track or fort data.
 
    The lander's balance in particular is set by measurement: thrust is chosen so that the
    thrust-to-weight ratio is ~2 (half the pipka travel hovers), and the tank is sized at
    roughly 2.5× the fuel a nominal automated descent consumes. Both are asserted.
+
+   The catapult's torsion energy is linear in tension, so range is nearly linear in it
+   (1% ≈ 1.4 m); the harness asserts that, energy conservation of the arm, and that the
+   farthest fort (`FORT.D` cap in `genLevel`, 132 m) is reachable by a rock against the
+   strongest wind. Change the cap and the harness together.
 
 2. **No reverse gear in the car.** It was removed on purpose: on a two-axis pressure
    control, "back" is already the brake, and distinguishing braking from reversing needs
