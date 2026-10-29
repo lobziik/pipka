@@ -37,7 +37,7 @@
     <g fill="#e2d8b8"><path d="M124 106 l-8 -12 l10 6 z"/><path d="M152 106 l8 -12 l-10 6 z"/></g>
   `},
  ru:{title:"Пипка-Катапульта", kicker:"Орки, торсион и тензодатчик",
-  time:"~45 мин", tokens:"—", model:"Opus 5.5",
+  time:"~43 мин", tokens:"~295k", model:"Opus 5.5",
   body:`<blockquote>сделай новую крутую пипка-игру с физикой. Хочу КАТАПУЛЬТУ! У нас тут таки
 тензодатчик с возможностью определять направление. От третьего лица. И чтоб 3д.
 Референс - орки из вахи и пипка естественно.<cite>Заказ</cite></blockquote>
@@ -105,14 +105,14 @@
 живым глазом без бинокля.</p>
 
 <dl class="stats">
-  <div><dt>Время</dt><dd>~45 мин<small>один заход, от начала сессии до коммита, по времени файлов</small></dd></div>
-  <div><dt>Токенов</dt><dd>—<small>не замерено</small></dd></div>
+  <div><dt>Время</dt><dd>~43 мин<small>один заход, 33 мин из них — модель</small></dd></div>
+  <div><dt>Токенов</dt><dd>~295k<small>контекст; 199k на выходе, $9.06</small></dd></div>
   <div><dt>Кода</dt><dd>1426 строк<small>один файл, без зависимостей, голый WebGL; плюс 48 строк стенда</small></dd></div>
   <div><dt>Проверено</dt><dd>стендом, ботами, живым вводом, скриншотами<small>на UHD 620 автора; живым человеком — нет</small></dd></div>
   <div><dt>Модель</dt><dd>Opus 5.5<small>claude-opus-5-5</small></dd></div>
 </dl>`},
  en:{title:"Pipka Catapult", kicker:"Orks, torsion and a strain gauge",
-  time:"~45 min", tokens:"—", model:"Opus 5.5",
+  time:"~43 min", tokens:"~295k", model:"Opus 5.5",
   body:`<blockquote>make a new cool pipka game with physics. I want a CATAPULT! We do have a
 strain gauge here that can tell direction. Third person. And make it 3D. Reference: the
 orks from Warhammer, and the pipka, naturally.<cite>The brief, translated</cite></blockquote>
@@ -185,8 +185,8 @@ how hard the game is. And I do not know whether a fort at 120 m reads to a live 
 without binoculars.</p>
 
 <dl class="stats">
-  <div><dt>Time</dt><dd>~45 min<small>one sitting, session start to commit, by file timestamps</small></dd></div>
-  <div><dt>Tokens</dt><dd>—<small>not measured</small></dd></div>
+  <div><dt>Time</dt><dd>~43 min<small>one sitting, 33 min of it the model</small></dd></div>
+  <div><dt>Tokens</dt><dd>~295k<small>context; 199k output, $9.06</small></dd></div>
   <div><dt>Code</dt><dd>1426 lines<small>one file, no dependencies, raw WebGL; plus 48 lines of harness</small></dd></div>
   <div><dt>Verified</dt><dd>by the harness, bots, real input, screenshots<small>on the author's UHD 620; by a live person — no</small></dd></div>
   <div><dt>Model</dt><dd>Opus 5.5<small>claude-opus-5-5</small></dd></div>
