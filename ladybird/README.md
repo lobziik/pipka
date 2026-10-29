@@ -20,7 +20,9 @@ For a three-year-old, so there is no losing, no timer and no text on the field. 
 six buds (four in the very first); touching one makes it bloom with a note of C major
 pentatonic, assigned left to right in rising order, so a sweep along the row plays a scale
 and no order of touching can sound wrong. When all are open there is a rainbow, a fanfare
-and a butterfly joins the ladybird for good (up to eight, kept in `localStorage`). Scenes
+and a butterfly joins the flock behind the ladybird (kept in `localStorage`). The flock is
+at most eight: the ninth butterfly scatters it, the eight fly off in a fan past the edges,
+and the newcomer stays alone. Letters follows the same rule. Scenes
 cycle morning, day, evening, night; at night the buds are sleeping stars and the moon wakes
 when the last one is lit.
 

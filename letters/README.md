@@ -20,7 +20,8 @@ A copy of the ladybird, not a mode of it. The whole word is at the top as tiles;
 carries a letter. Collection is in order: the right letter blooms and flies to its place,
 a wrong one shakes its head. Notes go by position in the word, so a collected word plays a
 rising pentatonic, and repeated letters (MAMA) are interchangeable. A finished word is read:
-letter by letter with a note and the voice, then whole, then the celebration.
+letter by letter with a note and the voice, then whole, then the celebration and a butterfly
+for the flock — by the ladybird's rule: at most eight, the ninth scatters it.
 
 The pull goes only towards the right letter (130 px, 1.5 times as far for the word's last
 two letters). A miss is not touching a wrong letter but stopping on it: below 60 px/s for

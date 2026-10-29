@@ -189,7 +189,10 @@ var musicOn=store('pipka.letters.music')!=='0';
 var voiceOn=store('pipka.letters.voice')==='1';
 var wantFull=store('pipka.letters.full')!=='0';
 var level=Math.max(1,Math.min(4,num(store('pipka.letters.level'),1)|0));
-var nFriends=Math.min(8,num(store('pipka.letters.friends'),0)|0);
+/* Стая — не больше восьми: дальше цепочка бабочек тянется через полэкрана и
+   закрывает бутоны. Девятая не встаёт в хвост, а разгоняет стаю (см. scatter) */
+var FLOCK=8;
+var nFriends=Math.min(FLOCK,num(store('pipka.letters.friends'),0)|0);
 
 /* ======================= ЯЗЫК ======================= */
 var TXT={
@@ -753,11 +756,11 @@ var SLOT=58, SGAP=8, SLOT_Y=18;
 var G={phase:'start', t:0, scene:0, round:0, cel:-1, fade:0, idle:0, wasFull:false, locked:false, lockT:0,
   word:'', pos:0, fill:[], bump:[], wt:0, lt:0, err:0, sess:0, words:0, rd:-1, rk:0, rnext:0};
 var bug={x:480,y:300,vx:0,vy:0,open:0,flap:0,blink:0,face:1,laugh:0};
-var targets=[], balloons=[], parts=[], friends=[], clouds=[], flies=[], hops=[];
+var targets=[], balloons=[], parts=[], friends=[], leaving=[], clouds=[], flies=[], hops=[];
 var PCAP=450, playAcc=0;
 
 function rescaleX(f){
-  var i, all=[targets,balloons,friends,clouds,flies,hops];
+  var i, all=[targets,balloons,friends,leaving,clouds,flies,hops];
   bug.x*=f;
   for(var a=0;a<all.length;a++) for(i=0;i<all[a].length;i++) all[a][i].x*=f;
 }
@@ -802,10 +805,21 @@ function newWord(){
   makeTargets();
   if(G.phase==='fly') setTimeout(function(){ say(G.word,0.7); },700);
 }
+/* Девятая бабочка разгоняет стаю: все восемь разлетаются от коровки веером, каждая
+   в свою сторону, и улетают за край, а новенькая остаётся одна. Награда за сад
+   остаётся наградой — прилёт есть всегда, — а стая не растёт без конца */
+function scatter(){
+  for(var i=0;i<friends.length;i++){ var f=friends[i];
+    var a=Math.atan2(f.y-bug.y,f.x-bug.x)+(Math.random()-0.5)*1.2, v=110+Math.random()*90;
+    leaving.push({x:f.x,y:f.y,col:f.col,ph:f.ph,vx:Math.cos(a)*v,vy:Math.sin(a)*v-50,t:0});
+    burst(f.x,f.y,6,[f.col,'#ffffff'],'spark',80);
+  }
+  friends=[]; snd.whoosh();
+}
 function mkFriend(x,y){ return {x:x,y:y,col:PAL[(friends.length*3+1)%PAL.length],ph:Math.random()*6}; }
 function reset(){
   bug.x=LW/2; bug.y=LH*0.42; bug.vx=bug.vy=0; bug.open=0;
-  G.cel=-1; G.idle=0; G.fade=0; balloons=[]; parts=[];
+  G.cel=-1; G.idle=0; G.fade=0; balloons=[]; parts=[]; leaving=[];
   friends=[]; for(var i=0;i<nFriends;i++) friends.push(mkFriend(bug.x-40-i*30,bug.y+10));
   newWord();
 }
@@ -974,6 +988,10 @@ function step(dt){
     }
     if(b.y<-90) balloons.splice(i,1);
   }
+  /* --- разлетающаяся стая: разгон, пока не скроются за краем --- */
+  for(i=leaving.length-1;i>=0;i--){ var lv=leaving[i]; lv.t+=dt;
+    lv.vx*=1+dt*0.9; lv.vy*=1+dt*0.9; lv.x+=lv.vx*dt; lv.y+=lv.vy*dt+Math.sin(G.t*9+lv.ph)*20*dt;
+    if(lv.t>6||lv.x<-80||lv.x>LW+80||lv.y<-80||lv.y>LH+80) leaving.splice(i,1); }
   /* --- друзья: каждая бабочка следует за предыдущей, первая — за коровкой --- */
   for(i=0;i<friends.length;i++){ var fr=friends[i], lead=i?friends[i-1]:bug;
     var tx=lead.x-(i?0:bug.face*34)+Math.sin(G.t*1.7+fr.ph)*14, ty=lead.y+12+Math.cos(G.t*2.1+fr.ph)*10;
@@ -990,7 +1008,8 @@ function step(dt){
       /* лишние буквы тоже распускаются: на празднике закрытых бутонов не остаётся */
       for(i=0;i<targets.length;i++){ if(!targets[i].open){ targets[i].open=true; targets[i].bt=0; }
         burst(targets[i].x,targets[i].y,14,PAL,'conf',200); } }
-    if(pc<1.4&&G.cel>=1.4 && friends.length<8){
+    if(pc<1.4&&G.cel>=1.4){
+      if(friends.length>=FLOCK) scatter();
       var side=bug.x<LW/2?LW+30:-30; friends.push(mkFriend(side,bug.y-60));
       nFriends=friends.length; store('pipka.letters.friends',nFriends); snd.friend();
     }
@@ -1319,6 +1338,7 @@ function paint(){
   }
   drawFlies();
   for(i=0;i<balloons.length;i++) drawBalloon(balloons[i]);
+  for(i=0;i<leaving.length;i++) drawFriend(leaving[i]);
   for(i=0;i<friends.length;i++) drawFriend(friends[i]);
   drawBug();
   drawParts();
@@ -1483,7 +1503,7 @@ el('btnLang').addEventListener('click',function(){
 /* крючок для прогона ботом в безголовом браузере; в обычной игре не используется */
 if(location.hash==='#test') window.__letters={G:G,bug:bug,step:step,paint:paint,start:start,pause:pause,
   isNext:isNext, pickVoice:pickVoice, say:say, sayPraise:sayPraise, voice:function(){ return {VUSE:VUSE,VSTATE:VSTATE,dec:Object.keys(VBUF).length,src:vSrc.length,ac:!!AC}; }, stats:stats, renderStats:renderStats, openStats:openStats, newWord:newWord, hops:function(){return hops;},
-  targets:function(){return targets;}, balloons:function(){return balloons;}, friends:function(){return friends;},
+  targets:function(){return targets;}, balloons:function(){return balloons;}, friends:function(){return friends;}, leaving:function(){return leaving;},
   parts:function(){return parts;}, song:function(){return song;}, makeSong:makeSong, keyPlace:keyPlace, balloon:balloon, giggle:giggle,
   setStick:function(x,y){ botStick={x:x,y:y}; }, readStick:readStick, LW:function(){return LW;}, LH:LH};
 

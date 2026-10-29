@@ -42,7 +42,8 @@
 без всякого индикатора. Бутоны распускаются от касания, у каждого цветка рожица и нота.
 Ноты взяты из пентатоники и разложены слева направо по возрастанию: в пентатонике нет
 полутонов, поэтому в каком порядке цветы ни трогай, фальши не будет, а пролёт вдоль ряда
-играет гамму. Когда открыты все — радуга, фанфара и бабочка, которая остаётся насовсем.
+играет гамму. Когда открыты все — радуга, фанфара и бабочка, которая встаёт в стаю за
+коровкой; девятая разгоняет стаю, и всё начинается с одной.
 Ночью вместо бутонов спят звёзды, и луна просыпается, когда зажжена последняя.</p>
 
 <p>Ребёнок обязательно будет бить ладошкой по клавиатуре, и я не стал с этим бороться,
@@ -116,7 +117,8 @@ so the pipka's zero is visible without any gauge. Buds bloom at a touch, and eve
 flower has a face and a note. The notes come from the pentatonic scale and rise from
 left to right: the pentatonic has no semitones, so no order of touching can sound
 wrong, and a sweep along the row plays a scale. When all are open there is a rainbow, a
-fanfare and a butterfly that stays for good. At night the buds are sleeping stars, and
+fanfare and a butterfly that joins the flock behind the ladybird; the ninth scatters the
+flock and it starts again from one. At night the buds are sleeping stars, and
 the moon wakes when the last one is lit.</p>
 
 <p>A child will slap the keyboard, so I did not fight it and made it part of the game.
