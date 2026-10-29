@@ -67,11 +67,12 @@ the longest pauses, so the gap inside "твёрдый знак" or the closure b
 becomes a cut. A doubtful cut (two items run together) gets a warning; too few pauses (an
 item skipped) and the batch is not written. Loudness is evened out with one gain per
 batch, not per clip, silence trimmed from both ends, everything encoded to Opus at
-32 kbit/s — about 300 KB per language. Change one letter and the whole letter batch is
-redone, or it would come from a different take again; raw batch recordings stay in
-`letters/.voice-cache/` (git-ignored). The
-recordings come first in the voice list next to the Voice button; music ducks while the
-voice speaks. While recordings are in use the system voice is never mixed in: no clip
+16 kbit/s — about 180 KB per language (323 KB at 32 kbit/s, with no audible difference).
+The bitrate is not part of the batch hash: change it and `--recut` re-encodes from the
+cache without the API. Change one letter and the whole letter batch is redone, or it
+would come from a different take again; raw batch recordings stay in
+`letters/.voice-cache/` (git-ignored). The recordings come first in the voice list next
+to the Voice button; music ducks while the voice speaks. While recordings are in use the system voice is never mixed in: no clip
 means silence (otherwise a soft sign off the keyboard spoke in espeak in the middle of the
 proper voice). A system voice chosen before recordings existed does not override them.
 Reading letter by letter waits for each letter to finish.
